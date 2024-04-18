@@ -7,8 +7,7 @@ export const channelSchema = z.object({
     .string()
     .trim()
     .min(3, { message: "Username must be at least 3 characters long." })
-    .max(10, { message: "Username must be at most 10 characters long." })
-    .optional(),
+    .max(10, { message: "Username must be at most 10 characters long." }),
     image: z
     .any()
     .refine((file) => {
@@ -23,9 +22,18 @@ export const channelSchema = z.object({
     type: z
     .any()
     .optional(),
-    owner: z
+    members: z
     .any(),
     password: z
     .string()
-    .trim()
+    .trim(),
+    id: z
+    .number()
+    .int()
+    .positive()
+    .optional(),
+    owner: z
+    .any()
+    .optional(),
+
 });

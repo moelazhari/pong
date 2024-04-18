@@ -7,13 +7,13 @@ import { config } from 'dotenv';
 config();
 
 @Injectable()
-export class AuthStratedy extends PassportStrategy(Strategy, 'passport-42') {
+export class AuthStratedy extends PassportStrategy(Strategy, '42') {
 
   constructor() {
     super({
       clientID: process.env.CLIENT_ID,
       clientSecret: process.env.SECRET,
-      callbackURL: 'http://localhost:8000/auth/redirect',
+      callbackURL: process.env.REDIRECT_URI,
     });
   }
 
@@ -21,14 +21,20 @@ export class AuthStratedy extends PassportStrategy(Strategy, 'passport-42') {
 
     const image = profile._json.image.link ? profile._json.image.link : '../../assets/avatar.png';
 
+    console.log(profile.emails[0].value);
+
     const user = {
+      email: profile.emails[0].value,
       username: profile.username,
-      name: profile.username,
       image: image,
+      baner: '/img/baner.webp',
       status: Status.ONLINE,
       XP: 0,
       level: 0,
+      wins: 0,
+      loses: 0,
       fact2Auth: false,
+      fact2Secret: '',
       accessToken ,
     }
   

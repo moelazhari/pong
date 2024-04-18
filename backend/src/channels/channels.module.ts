@@ -2,15 +2,12 @@ import { Module } from '@nestjs/common';
 import { ChannelsService } from './channels.service';
 import { ChannelsController } from './channels.controller';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { Channel } from '../entities/channel.entity';
-import { JwtModule } from '@nestjs/jwt';
+import { Channel, Membership, Message, Bannation, Mutation,} from '../entities/channel.entity';
+import { Blockage } from 'src/entities/user.entity';
+import { User } from 'src/entities/user.entity';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Channel]),
-  JwtModule.register({
-    secret: process.env.JWT_SECRET,
-    signOptions: { expiresIn: process.env.JWT_EXP_D},
-  })],
+  imports: [TypeOrmModule.forFeature([Channel, Membership, Message, Blockage, User, Bannation, Mutation])],
   controllers: [ChannelsController],
   providers: [ChannelsService],
   exports: [ChannelsService]

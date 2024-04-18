@@ -1,37 +1,103 @@
-import Image from 'next/image'
-import userDto  from '@/dto/userDto'
-import getData from '@/apis/server/get'
+"use client";
 
-const User = async({id} : {id : string | null}) => {
+import Image from "next/image";
+import { userDto } from "@/dto/userDto";
+import uploadImage from "@/apis/uploadImage";
+import { useMutation } from "@tanstack/react-query";
+import axios from "@/apis/axios";
+import { Client } from "@/providers/QueryProvider";
+import { Loader2 } from "lucide-react";
+import { useState } from "react";
+import UserParametres from "@/components/profile/UserParametres";
+import { ImagePlus } from "lucide-react";
 
-  let endpoint = '/users/me';
+const User = ({ user, isMe }: { user: any; isMe: boolean }) => {
+  const [isLoading, setIsLoading] = useState<boolean>(false);
 
-  if (id)
-    endpoint = `/users/${id}`;
+  const updateBaner = useMutation({
+    mutationKey: ["updateBaner"],
+    mutationFn: async (user: userDto) => {
+      await axios.patch("/users/updateMe", user);
+    },
+    onSuccess: () => {
+      Client.refetchQueries(["user", "me"]);
+    },
+  });
 
-  const data: userDto = await getData(endpoint);
+  const handleChange = async (e: any) => {
+    setIsLoading(true);
+    const user: userDto = {};
+    const uploadimage = await uploadImage(e.target.files[0]);
+    user.baner = uploadimage;
+    await updateBaner.mutate(user);
+    await Client.refetchQueries(["user", "me"]);
+    setIsLoading(false);
+  };
 
-
-  const  baner = '/img/baner.webp'
-  const status = 'online';
-   
-    return(
-       <div className='relative overflow-hidden sm:rounded-3xl sm:shadow-2xl'>
-         <Image className='w-full h-full'  src={baner} alt='baner' width={1000} height={1000} />
-         <div className='absolute flex gap-3 items-center bottom-0 w-full bg-black/70 p-[14px]'> 
-           <Image className='rounded-full w-[86px] h-[86px] sm:m-4'  src={data.image} alt='img' width={1000} height={1000} />
-           <div className='text-left'>
-             <h2 className='text-white text-xl sm:text-3xl'>{data.name}</h2>
-              {id &&
-                <div className=''>
-                <span className='text-green-500 sm:text-xl'>{status}</span>
-                <button className='bg-blue text-sm px-4 py-[2px] ml-4 text-black'>add friend </button>
-                </div>
-              }
-           </div>
-         </div> 
-       </div>
-    )
-}
+  return (
+    <div className="relative overflow-hidden sm:rounded-3xl sm:shadow-2xl">
+      <div className="w-full max-h-[470px]">
+        <Image
+          priority
+          className="w-full h-full object-cover object-center"
+          src={user.baner}
+          alt="baner"
+          width={1000}
+          height={1000}
+        />
+      </div>
+      {isMe && (
+        <label className="absolute right-0 bottom-[110px] sm:bottom-[134px] cursor-pointer bg-white bg-opacity-20 ackdrop-blur-lg drop-shadow-lg ">
+          {isLoading ? (
+            <Loader2
+              className="animate-spin"
+              size={26}
+              strokeWidth={2}
+            />
+          ) : (
+            <ImagePlus className="z-40" size={26} strokeWidth={2} />
+          )}
+          <input
+            type="file"
+            className="hidden"
+            accept="image/jpeg, image/jpg, image/png, image/webp"
+            onChange={handleChange}
+          />
+        </label>
+      )}
+      <div className="absolute flex gap-4 items-center bottom-0 w-full bg-black/50 p-3 sm:p-6">
+        <div className="rounded-full w-[86px] h-[86px] overflow-hidden">
+          <Image
+            priority
+            className="w-full h-full object-cover"
+            src={user.image}
+            alt="img"
+            width={86}
+            height={86}
+          />
+        </div>
+        <div className="flex flex-col items-start gap-1">
+          <h2 className="text-white text-xl sm:text-3xl">{user.username}</h2>
+          {!isMe && (
+            <div className="flex gap-2 text-sm">
+              {user.status === "in game" ? (
+                <span className="text-blue sm:text-xl">{user.status}</span>
+              ) : (
+                <span
+                  className={`sm:text-xl ${
+                    user.status === "online" ? "text-green-500" : "text-red"
+                  }`}
+                >
+                  {user.status}
+                </span>
+              )}
+            </div>
+          )}
+        </div>
+      </div>
+      {!isMe && <UserParametres id={user.id} />}
+    </div>
+  );
+};
 
 export default User;

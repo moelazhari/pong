@@ -7,14 +7,15 @@ import {
     ManyToMany,
     JoinTable,
     Index,
-    DataSource
+    CreateDateColumn
   } from 'typeorm';
-import { Administration, Channel, Message, Sanction } from './channel.entity';
+  
+import {  Channel, Message, Mutation, Bannation, Membership } from './channel.entity';
   
 export enum Status {
     ONLINE = 'online',
     OFFLINE = 'offline',
-    INGAME = 'ingame'
+    INGAME = 'in game'
 }
   
 @Entity({ name: 'User' })
@@ -22,36 +23,50 @@ export class User {
     @PrimaryGeneratedColumn()
     id: number;
 
-    @Column({ length: 25 })
-    @Index()
+    @Column({nullable: true})
+    @Index({unique: true})
+    email: string;
+
+    @Column({ length: 10, nullable: true})
+    @Index({unique: true})
     username: string;
 
-    @Column()
-    name: string;
-    
+    @Column({nullable: true})
+    image: string;
+
     @Column({
         nullable: true,
     })
-    image: string;
+    baner: string;
     
     @Column('text' , { nullable: true })
     status: Status;
     
-    @Column({ type: 'boolean', nullable: true})
-    fact2Auth: boolean;
-    
-    @Column()
+    @Column('decimal', { precision: 6, scale: 2, nullable: true})
     level: number;
     
-    @Column()
+    @Column({nullable: true})
     XP: number;
+
+    @Column({ nullable: true })
+    wins: number;
+
+    @Column({ nullable: true })
+    loses: number;
+
+
+    @Column({ type: 'boolean', nullable: true})
+    fact2Auth: boolean;
+
+    @Column({ nullable: true , select: false})
+    fact2Secret: string;
     
     @OneToMany(() => Channel, channel => channel.owner)
     ownedChannels: Channel[];
     
-    @ManyToMany(() => Channel, channel => channel.memberships)
-    @JoinTable()
-    channels: Channel[];
+    @OneToMany(() => Membership, membership => membership.member)
+    // @JoinTable()
+    memberships: Membership[];
     
     @OneToMany(() => Friendship, (friendship) => friendship.initiater)
     initiatedFriendships: Friendship[];
@@ -65,8 +80,8 @@ export class User {
     @OneToMany(() => Blockage, (blockage) => blockage.blocked)
     blockedByUsers: User[];
     
-    @OneToMany(() => Sanction, (sanction) => sanction.member)
-    sanctions: Sanction[];
+    @OneToMany(() => Mutation, (mutation) => mutation.member)
+    mutations: Mutation[];
     
     @OneToMany(() => GameHistory, (gameHistory) => gameHistory.winner)
     wonGames: GameHistory[];
@@ -76,13 +91,11 @@ export class User {
     
     @OneToMany(() => Message, (message) => message.sender)
     messages: Message[];
-    
-    @OneToMany(() => Administration, (administration) => administration.admin)
-    administratedChannels: Administration[];
+
+    @OneToMany(() => Bannation, (bannation) => bannation.member)
+    bannations: Bannation[];
 }
 
-
-    
 @Entity({ name: 'GameHistory' })
 export class GameHistory {
     @PrimaryGeneratedColumn()
@@ -97,10 +110,10 @@ export class GameHistory {
     @Column()
     loserScore: number;
   
-    @Column({ type: 'timestamp' })
-    createdAt: Date;
+    @CreateDateColumn()
+    created_at: Date;
 }
-  
+
 @Entity({ name: 'Blockage' })
 export class Blockage {
     @PrimaryGeneratedColumn()
@@ -112,7 +125,13 @@ export class Blockage {
     @ManyToOne(() => User, (user) => user.blockedByUsers)
     blocked: User;
 }
-  
+
+export enum Fstatus {
+    PENDING = 'pending',
+    ACCEPTED = 'accepted',
+    NONE = 'none'
+}
+
 @Entity({ name: 'Friendship' })
 export class Friendship {
     @PrimaryGeneratedColumn()
@@ -124,8 +143,6 @@ export class Friendship {
     @ManyToOne(() => User, (user) => user.receivedFriendships)
     receiver: User;
   
-    @Column({ type: 'boolean' })
-    isAccepted: boolean;
+    @Column( )
+    status: Fstatus;
 }
-export { Channel };
-
