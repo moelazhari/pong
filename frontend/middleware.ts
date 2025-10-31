@@ -77,7 +77,7 @@ export async function middleware(request: NextRequest) {
     }
     
     try {
-      const response  = await axios.get("/auth/me", {
+      const response  = await axios.get("/users/me", {
         headers: { cookie: cookies },
       })
       
@@ -140,14 +140,13 @@ export async function middleware(request: NextRequest) {
     
 
     try {
-      const { data } = await axios.get("/auth/me", {
+      const { data } = await axios.get("/users/me", {
         headers: { cookie: cookies },
       });
 
-      if (data) {        
+      if (data) { 
         const user = data.user
-        
-        // Redirect to appropriate page based on status
+
         if (!user.completeProfile) {
           return NextResponse.redirect(new URL('/complete-profile', request.url));
         }
@@ -157,8 +156,8 @@ export async function middleware(request: NextRequest) {
         return NextResponse.redirect(new URL('/profile', request.url));
       }
     } catch (error: any) {
-      console.log("hhhhhhh");
-      console.log(error.response.data.message);
+      // console.log("hhhhhhh");
+      // console.log(error?.response?.data?.message);
       // If check fails, let them access login/signup
     }
   }

@@ -64,8 +64,7 @@ export class UsersController {
       throw new NotFoundException('User not found');
     }
 
-   
-    return user;
+    return {"user" : user};
   }
 
   @Patch('me/profile')

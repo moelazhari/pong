@@ -15,12 +15,12 @@ import { Loader2, ImagePlus } from "lucide-react";
 
 config();
 
-const updateForm = ({ user }: { user: any }) => {
+const UpdateForm = ({ user }: { user: any }) => {
   const Router = useRouter();
 
   const [image, setImage] = useState<any>(null);
   const [username, setUserName] = useState<string>(user.username);
-  const [imagePreview, setImagePreview] = useState<string>(user.image);
+  const [imagePreview, setImagePreview] = useState<string>(user.avatar || "/img/a.jpeg");
   const [errors, setErrors] = useState<z.ZodIssue[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(false);
 
@@ -121,4 +121,4 @@ const updateForm = ({ user }: { user: any }) => {
   );
 };
 
-export default updateForm;
+export default UpdateForm;

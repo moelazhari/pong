@@ -34,7 +34,7 @@ export class JwtAccessStrategy extends PassportStrategy(Strategy, 'jwt-access') 
 
     return {
       id: payload.id,
-      fact2Auth: payload.fact2Auth,
+      fact2Verified: payload.fact2Verified,
     };
   }
 }

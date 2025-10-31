@@ -192,7 +192,7 @@ export class AuthService {
 private async generateTokens(userId: number, is2FAVerified: boolean) {
   const payload = {
     id: userId,
-    fact2Verified: is2FAVerified, // ✅ This is what middleware checks
+    fact2Verified: is2FAVerified,
   };
 
   const accessToken = await this.jwtService.signAsync(payload, {
