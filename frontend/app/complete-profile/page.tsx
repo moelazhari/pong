@@ -28,6 +28,7 @@ const UpdateForm = () => {
     formState: { errors, isSubmitting },
   } = useForm<UpdateFormData>({
     resolver: zodResolver(completeProfileSchema),
+    mode: "onChange",
     defaultValues: {
       username: "",
       image: undefined,
@@ -35,7 +36,7 @@ const UpdateForm = () => {
   })
 
   const onImageChange = (file: File) => {
-    setValue("image", file)
+    setValue('image', file, { shouldValidate: true });
     setImagePreview(URL.createObjectURL(file))
   }
 
@@ -46,7 +47,7 @@ const UpdateForm = () => {
         uploadedImageUrl = await uploadImage(data.image)
       }
       const payload = { username: data.username, image: uploadedImageUrl }
-      await axios.patch("/auth/singin", payload, { withCredentials: true })
+      await axios.patch("me/profile", payload)
     },
     onSuccess: () => {
       router.push("/profile")
@@ -58,7 +59,7 @@ const UpdateForm = () => {
   }
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-5 max-w-md w-full">
+    <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col  max-w-md w-full">
       <label className="relative cursor-pointer self-center hover:opacity-80 transition-opacity duration-300 mb-2">
         <Image
           priority
@@ -80,15 +81,16 @@ const UpdateForm = () => {
           className="hidden"
           {...register("image", {
             validate: {
-              acceptedFormats: (files) => {
-                const file = files?.[0]
-                if (!file) return true
-                return ACCEPTED_IMAGE_TYPES.includes(file.type) || "Invalid file type"
+              acceptedFormats: (fileOrFiles) => {
+                console.log("sdfdfdsfdsfdsfdsfdsfds");
+                const file = fileOrFiles instanceof FileList ? fileOrFiles[0] : fileOrFiles;
+                if (!file) return true;
+                return ACCEPTED_IMAGE_TYPES.includes(file.type) || "Invalid file type";
               },
-              maxSize: (files) => {
-                const file = files?.[0]
-                if (!file) return true
-                return file.size <= MAX_FILE_SIZE || "File size must be under 5MB"
+              maxSize: (fileOrFiles) => {
+                const file = fileOrFiles instanceof FileList ? fileOrFiles[0] : fileOrFiles;
+                if (!file) return true;
+                return file.size <= MAX_FILE_SIZE || "File size must be under 5MB";
               },
             },
           })}
@@ -99,22 +101,27 @@ const UpdateForm = () => {
           }}
         />
       </label>
-      {errors.image && <p className="text-red-600 text-center -mt-4">{errors.image.message}</p>}
-
+      <p className="h-2 text-red mb-4 text-xs">{errors?.image?.message}</p>
+      
+      <label className={"text-xl mb-2"}>
+          Enter Your Username
+      </label>
       <input
+        id="username"
         type="text"
         placeholder="Username"
-        className="h-12 rounded-2xl text-black text-center px-4 focus:outline-none focus:border-2 focus:border-black hover:opacity-75 transition-opacity duration-200"
+        className={`text-black w-full px-3 py-2 border rounded mb-1 focus:outline-none focus:ring-2 focus:ring-blue ${errors.username? "border-red focus:ring-red" : "border-gray-300"}`}
+            aria-invalid={errors.username ? "true" : "false"}
         {...register("username")}
       />
-      {errors.username && <p className="text-red-600 text-center">{errors.username.message}</p>}
+      <p className="h-2 text-red mb-4 text-xs">{errors?.username?.message}</p>
 
       <button
         type="submit"
-        disabled={isSubmitting}
-        className="mt-4 h-12 rounded-2xl bg-blue text-black px-12 hover:opacity-80 disabled:opacity-50 transition-opacity duration-200 flex items-center justify-center gap-2"
+        // disabled={isSubmitting}
+        className="mt-12 h-12 rounded-2xl bg-blue px-12 hover:opacity-80 disabled:opacity-50 transition-opacity duration-200 flex items-center justify-center gap-2"
       >
-        Complete Profile
+        Save
         {isSubmitting && <Loader2 className="animate-spin" size={18} strokeWidth={1.2} />}
       </button>
     </form>
@@ -125,7 +132,7 @@ export default function SignIn() {
   return (
     <main className="grid place-content-center h-screen w-full bg-bg bg-cover bg-center">
       <section className="flex flex-col items-center rounded-[50px] py-16 px-10 max-w-xl mx-auto bg-white bg-opacity-20 backdrop-blur-lg drop-shadow-lg">
-        <h1 className="text-3xl font-bold mb-8 text-gray-900">Complete your profile</h1>
+        <h1 className="text-3xl font-bold mb-12">Complete your profile</h1>
         <UpdateForm />
       </section>
     </main>

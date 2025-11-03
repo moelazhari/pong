@@ -67,7 +67,13 @@ export class User {
   @Exclude()
   fact2Secret: string;
 
-  @Column({ default: false })
+  @Column({
+    type: 'boolean',
+    generatedType: 'STORED',
+    asExpression: `CASE WHEN username IS NOT NULL AND avatar IS NOT NULL THEN true ELSE false END`,
+    update: false,
+    insert: false,
+  })
   completeProfile: boolean;
 
   @CreateDateColumn()

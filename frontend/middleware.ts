@@ -14,8 +14,7 @@ export async function middleware(request: NextRequest) {
   // ROUTE DEFINITIONS
   // ========================================
   
-  // Routes anyone can access (no auth needed)
-  const publicRoutes = ['/'];
+
   
   // Routes that need auth but have special handling
   const twoFactorRoute = '/verify-2fa';
@@ -34,7 +33,6 @@ export async function middleware(request: NextRequest) {
   // ========================================
   // ROUTE CLASSIFICATION
   // ========================================
-  const isPublicRoute = publicRoutes.includes(pathname);
   const isAuthRoute = pathname === '/'
   const isProtectedRoute = protectedRoutes.some((route) => pathname.startsWith(route));
   const skipProfileCheck = skipProfileCheckRoutes.some((route) => pathname.startsWith(route));
@@ -46,21 +44,21 @@ export async function middleware(request: NextRequest) {
   if (!accessToken && refreshToken) {
     console.log("TOKEN REFRESH");
     try {
-      console.log(cookies);
       const response = await axios.post("/auth/refresh", {
         headers: { cookie: cookies },
       });
 
-      if (response.ok) {
-        const newResponse = NextResponse.next();
-        const setCookieHeader = response.headers.get('set-cookie');
-        if (setCookieHeader) {
-          newResponse.headers.set('set-cookie', setCookieHeader);
-        }
-        return newResponse;
+      if (response.status === 200) {
+        return NextResponse.next();
       }
     } catch (error: any) {
-      console.error('Token refresh failed:', error.response.data.message);
+      console.error('Token refresh failed:', error.response?.data?.message);
+
+      const response = NextResponse.redirect(new URL('/', request.url));
+      response.headers.append('Set-Cookie', 'access_token=; Path=/; HttpOnly; Max-Age=0');
+      response.headers.append('Set-Cookie', 'refresh_token=; Path=/; HttpOnly; Max-Age=0');
+      
+      return response;
     }
   }
   
@@ -96,6 +94,8 @@ export async function middleware(request: NextRequest) {
       // ========================================
       // Profile incomplete and not on a route that skips this check
       // WHY SKIP? Some routes need to work BEFORE profile is complete
+
+      console.log("sdfghjkldfghjklgh");
       if (!user.completeProfile && !skipProfileCheck) {
         const url = new URL(profileCompletionRoute, request.url);
         url.searchParams.set('redirect', pathname);
@@ -130,6 +130,10 @@ export async function middleware(request: NextRequest) {
       return NextResponse.redirect(url);
     }
   }
+
+  if (pathname === '/complete-profile' && (!accessToken && !refreshToken)) {
+    return NextResponse.redirect(new URL('/', request.url));
+  }
   
   // ========================================
   // 5. AUTH ROUTES (login/signup)
@@ -144,6 +148,8 @@ export async function middleware(request: NextRequest) {
         headers: { cookie: cookies },
       });
 
+      console.log(data);
+
       if (data) { 
         const user = data.user
 
@@ -156,9 +162,8 @@ export async function middleware(request: NextRequest) {
         return NextResponse.redirect(new URL('/profile', request.url));
       }
     } catch (error: any) {
-      // console.log("hhhhhhh");
-      // console.log(error?.response?.data?.message);
-      // If check fails, let them access login/signup
+      console.log("hhhhhhh");
+      console.log(error?.response?.data?.message);
     }
   }
 

@@ -126,7 +126,7 @@ export class UsersService {
     if (!updatedUser) {
       throw new NotFoundException('User not found');
     }
-    
+
     return updatedUser;
   }
 
