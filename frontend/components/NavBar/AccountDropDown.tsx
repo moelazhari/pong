@@ -4,8 +4,6 @@ import React from "react";
 import Image from "next/image";
 import { useState } from "react";
 import useCloseOutSide from "@/hookes/useCloseOutSide";
-import { useQuery } from "@tanstack/react-query";
-import axios from "@/lib/axios";
 import { UserCircle2, XCircle, Settings } from "lucide-react";
 import Link from "next/link";
 import Logout from "./Logout";
@@ -69,7 +67,7 @@ const AccountDropDown = ({isLoading, src} : {isLoading : boolean, src : string})
             <Image
               className="rounded-full h-[28px] w-[28px]"
               src={src}
-              alt={"user image"}
+              alt={"user avatar"}
               width={28}
               height={28}
             />

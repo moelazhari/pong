@@ -4,7 +4,7 @@ import { Friendship, Fstatus, User } from 'src/entities/user.entity';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import {ChannelType, MemberTitle, Membership } from 'src/entities/channel.entity';
-import { UsersGateway } from 'src/usersGateway/user.gateway';
+import { UsersGateway } from 'src/users/user.gateway';
 
 @Injectable()
 export class FriendshipService {
@@ -16,11 +16,11 @@ export class FriendshipService {
     private usersGateway: UsersGateway,
     ) {}
     
-    async friendReq(username : string) {
+    async friendReq(id : number) {
       
       const friendship = await this.friendshipRepo.find({
         where: [
-          { receiver: { username: username }  , status: Fstatus.PENDING},
+          { receiver: { id: id }  , status: Fstatus.PENDING},
         ],
         relations: ['initiater']
       });

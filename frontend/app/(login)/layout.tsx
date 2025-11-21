@@ -9,10 +9,10 @@ export default async function RootLayout({
 }) {
 
   return (
-    <>
+    <main className="h-screen bg-bg bg-cover bg-no-repeat">
         <NavBar />
         <Invite/>
         {children}
-    </> 
+    </main> 
   )
 }

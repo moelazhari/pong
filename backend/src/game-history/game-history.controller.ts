@@ -1,6 +1,6 @@
 import { Controller, Get, Post, Body, Req, Param, UseGuards} from '@nestjs/common';
 import { GameHistoryService } from './game-history.service';
-import { Jwt2faAuthGuard } from '../auth/guards/jwt-2fa-auth.guard';
+import { JwtAccessGuard } from '../auth/guards/jwt-access.guard';
 
 export class ghReq {
   winner: string;
@@ -9,7 +9,7 @@ export class ghReq {
 }
 
 @Controller('gameHistory')
-@UseGuards(Jwt2faAuthGuard)
+@UseGuards(JwtAccessGuard )
 export class GameHistoryController {
   constructor(private readonly gameHistoryService: GameHistoryService) {}
 

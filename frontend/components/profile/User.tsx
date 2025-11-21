@@ -70,7 +70,7 @@ const User = ({ user, isMe }: { user: any; isMe: boolean }) => {
           <Image
             priority
             className="w-full h-full object-cover"
-            src={user.image}
+            src={user.avatar}
             alt="img"
             width={86}
             height={86}

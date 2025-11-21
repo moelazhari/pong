@@ -9,7 +9,6 @@ config();
 
 const cookieExtractor = (req: Request): string | null => {
   if (req && req.cookies) {
-    console.log(req.cookies['refresh_token']);
     return req.cookies['refresh_token'];
   }
   return null;

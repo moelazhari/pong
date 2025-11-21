@@ -6,45 +6,35 @@ export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
   const cookies = request.headers.get('cookie') || '';
 
-
   const accessToken = request.cookies.get('access_token');
   const refreshToken = request.cookies.get('refresh_token');
 
   // ========================================
   // ROUTE DEFINITIONS
   // ========================================
-  
-
-  
-  // Routes that need auth but have special handling
   const twoFactorRoute = '/verify-2fa';
   const profileCompletionRoute = '/complete-profile';
   
-  // Routes that skip profile completion check
-  // WHY? Because these routes are needed BEFORE profile can be completed
-  const skipProfileCheckRoutes = [
-    '/complete-profile',     // Can't check profile on the profile completion page
-    '/', 
-  ];
+  // const skipProfileCheckRoutes = [
+  //   '/complete-profile',
+  // ];
   
-  // Routes that need full auth (token + 2FA verified + profile complete)
-  const protectedRoutes = ['/game', '/profile', '/settings','leaderboard', '/chat', 'channel'];
+  const protectedRoutes = ['/game', '/profile', '/settings', '/leaderboard', '/chat', '/channel'];
 
   // ========================================
   // ROUTE CLASSIFICATION
   // ========================================
-  const isAuthRoute = pathname === '/'
+  const isAuthRoute = pathname === '/';
   const isProtectedRoute = protectedRoutes.some((route) => pathname.startsWith(route));
-  const skipProfileCheck = skipProfileCheckRoutes.some((route) => pathname.startsWith(route));
+  // const skipProfileCheck = skipProfileCheckRoutes.some((route) => pathname.startsWith(route));
 
   // ========================================
   // 1. TOKEN REFRESH
   // ========================================
-  
   if (!accessToken && refreshToken) {
-    console.log("TOKEN REFRESH");
+    console.log("🔄 TOKEN REFRESH");
     try {
-      const response = await axios.post("/auth/refresh", {
+      const response = await axios.post("/auth/refresh", {}, {
         headers: { cookie: cookies },
       });
 
@@ -52,8 +42,6 @@ export async function middleware(request: NextRequest) {
         return NextResponse.next();
       }
     } catch (error: any) {
-      console.error('Token refresh failed:', error.response?.data?.message);
-
       const response = NextResponse.redirect(new URL('/', request.url));
       response.headers.append('Set-Cookie', 'access_token=; Path=/; HttpOnly; Max-Age=0');
       response.headers.append('Set-Cookie', 'refresh_token=; Path=/; HttpOnly; Max-Age=0');
@@ -66,8 +54,7 @@ export async function middleware(request: NextRequest) {
   // 2. PROTECTED ROUTES
   // ========================================
   if (isProtectedRoute) {
-    console.log("PROTECTED ROUTES")
-    // No token at all - redirect to login
+ 
     if (!accessToken) {
       const url = new URL('/', request.url);
       url.searchParams.set('redirect', pathname);
@@ -75,43 +62,35 @@ export async function middleware(request: NextRequest) {
     }
     
     try {
-      const response  = await axios.get("/users/me", {
+      const response = await axios.get("/users/me", {
         headers: { cookie: cookies },
-      })
-      
-      if (!response.ok) {
-        const url = new URL('/', request.url);
-        url.searchParams.set('redirect', pathname);
-        return NextResponse.redirect(url);
-      }
-      
-      console.log("response.data");
+      });
 
       const user = response.data;
       
-      // ========================================
-      // 3. CHECK PROFILE COMPLETION
-      // ========================================
-      // Profile incomplete and not on a route that skips this check
-      // WHY SKIP? Some routes need to work BEFORE profile is complete
+      console.log("✅ User data:", {
+        completeProfile: user.completeProfile,
+        fact2Auth: user.fact2Auth,
+        fact2Verified: user.fact2Verified,
+      });
 
-      console.log("sdfghjkldfghjklgh");
-      if (!user.completeProfile && !skipProfileCheck) {
+      // ========================================
+      // 4.PROFILE COMPLETION
+      // ========================================
+      if (!user.completeProfile) {
         const url = new URL(profileCompletionRoute, request.url);
         url.searchParams.set('redirect', pathname);
         return NextResponse.redirect(url);
       }
       
-      // User on profile completion page but already complete
       if (pathname === profileCompletionRoute && user.completeProfile) {
+        console.log("✅ Profile already complete, redirecting to profile");
         return NextResponse.redirect(new URL('/profile', request.url));
       }
       
       // ========================================
-      // 4. CHECK 2FA VERIFICATION
+      // 3.2FA VERIFICATION
       // ========================================
-      // User has 2FA enabled but hasn't verified in this session
-      // WHY CHECK? User could have token from login but not yet verified 2FA code
       if (user.fact2Auth && !user.fact2Verified && pathname !== twoFactorRoute) {
         const url = new URL(twoFactorRoute, request.url);
         url.searchParams.set('redirect', pathname);
@@ -120,53 +99,63 @@ export async function middleware(request: NextRequest) {
       
       // User is on 2FA page but already verified or doesn't have 2FA
       if (pathname === twoFactorRoute && (!user.fact2Auth || user.fact2Verified)) {
+        console.log("✅ 2FA already verified, redirecting to profile");
         return NextResponse.redirect(new URL('/profile', request.url));
       }
+
+
+      return NextResponse.next();
       
-    } catch (error) {
-      console.error('User verification failed:', error);
+      
+    } catch (error: any) {
       const url = new URL('/', request.url);
       url.searchParams.set('redirect', pathname);
       return NextResponse.redirect(url);
     }
   }
 
-  if (pathname === '/complete-profile' && (!accessToken && !refreshToken)) {
-    return NextResponse.redirect(new URL('/', request.url));
+  // ========================================
+  // 5. COMPLETE-PROFILE ROUTE PROTECTION
+  // ========================================
+  if (pathname === '/complete-profile') {
+    if (!accessToken || !refreshToken) {
+      return NextResponse.redirect(new URL('/', request.url));
+    }
+    return NextResponse.next();
   }
   
   // ========================================
-  // 5. AUTH ROUTES (login/signup)
+  // 6. AUTH ROUTES
   // ========================================
   if (isAuthRoute && accessToken) {
-    // Already has token - check if they need 2FA or profile completion
-    console.log("AUTH ROUTES");
     
-
     try {
-      const { data } = await axios.get("/users/me", {
+      const response = await axios.get("/users/me", {
         headers: { cookie: cookies },
       });
 
-      console.log(data);
+      const user = response.data;
+      
+      console.log("✅ User status:", {
+        completeProfile: user.completeProfile,
+        fact2Auth: user.fact2Auth,
+        fact2Verified: user.fact2Verified,
+      });
 
-      if (data) { 
-        const user = data.user
-
-        if (!user.completeProfile) {
-          return NextResponse.redirect(new URL('/complete-profile', request.url));
-        }
-        if (user.fact2Auth && !user.fact2Verified) {
-          return NextResponse.redirect(new URL('/verify-2fa', request.url));
-        }
-        return NextResponse.redirect(new URL('/profile', request.url));
+      if (!user.completeProfile) {
+        return NextResponse.redirect(new URL('/complete-profile', request.url));
       }
+      
+      if (user.fact2Auth && !user.fact2Verified) {
+        return NextResponse.redirect(new URL('/verify-2fa', request.url));
+      }
+      
+      return NextResponse.redirect(new URL('/profile', request.url));
+      
     } catch (error: any) {
-      console.log("hhhhhhh");
-      console.log(error?.response?.data?.message);
+      return NextResponse.next();
     }
   }
-
   return NextResponse.next();
 }
 

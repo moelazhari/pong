@@ -6,23 +6,29 @@ export const signSchema = z.object({
     password: z.string().min(6, "Password must be at least 6 characters"),
 });
 
-export const completeProfileSchema = z.object({
-  username: z
-    .string()
-    .min(2, "username must be at least 2 characters")
-    .max(14, "username must be less than 14 characters"),
-  
-  // avatar: z
-  //   .instanceof(File)
-  //   .refine(file => ACCEPTED_IMAGE_TYPES.includes(file.type), {
-  //     message: "Invalid file type. Only jpeg, png, webp, svg, gif allowed.",
-  //   })
-  //   .refine(file => file.size <= MAX_FILE_SIZE, {
-  //     message: "File size must be less than 5MB.",
-  //   })
-});
+// export const completeProfileSchema = z.object({
+//   username: z.string()
+//     .min(3, "Username must be at least 3 characters")
+//     .max(20, "Username must be less than 20 characters")
+//     .regex(/^[a-zA-Z0-9_]+$/, "Username can only contain letters, numbers, and underscores"),
+//   image: z.string()
+//     .url("Invalid image URL")
+//     .min(1, "Please upload an avatar image"),
+// })
 
-export const userSchema = signSchema.extend({
+
+export const completeProfileSchema = z.object({
+  username: z.string()
+    .min(3, "Username must be at least 3 characters")
+    .max(20, "Username must be less than 20 characters")
+    .regex(/^[a-zA-Z0-9_]+$/, "Username can only contain letters, numbers, and underscores"),
+  avatar: z.string()
+    .min(1, "Please upload an avatar image")
+    .optional()
+    .default("/img/a.jpeg"), // Set default value
+})
+
+export const userSchema = completeProfileSchema.extend({
     id: z
     .number()
     .optional(),

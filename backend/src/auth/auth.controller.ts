@@ -27,7 +27,6 @@ export class AuthController {
     @Res({ passthrough: true }) res: Response,
     @Body() signupDto: LoginDTO,
   ) {
-    console.log(signupDto);
     const tokens = await this.authService.signUp(signupDto);
 
     this.setAuthCookies(res, tokens);
@@ -41,15 +40,12 @@ export class AuthController {
     @Res({ passthrough: true }) res: Response,
     @Body() loginDto: LoginDTO,
   ) {
-    const result = await this.authService.login(loginDto);
+    const tokens = await this.authService.login(loginDto);
 
-    this.setAuthCookies(res, result);
+    this.setAuthCookies(res, tokens);
 
     return {
-      requires2FA: result.requires2FA || false,
-      message: result.requires2FA 
-        ? 'Please verify 2FA code' 
-        : 'Login successful',
+      message: 'Login successful',
     };
   }
 
@@ -130,6 +126,7 @@ export class AuthController {
     tokens: {
       accessToken: string;
       refreshToken: string;
+      accessTokenExpiry: number
       refreshTokenExpiry: number;
     },
   ) {
@@ -140,7 +137,7 @@ export class AuthController {
       httpOnly: true,
       secure: isProduction,
       sameSite: 'lax',
-      maxAge: 15 * 60 * 1000,
+      maxAge: tokens.accessTokenExpiry * 1000,
       path: '/',
     });
 

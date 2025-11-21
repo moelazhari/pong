@@ -3,6 +3,7 @@
 import Image from "next/image";
 import { useEffect, useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
+import toast from "react-hot-toast";
 import axios from "@/lib/axios";
 import { userDto } from "@/dto/userDto";
 import { Client } from "@/providers/QueryProvider";
@@ -20,48 +21,59 @@ const FriendRequestDropdown = ({ users, setIsOpen }: Props) => {
 
   const Accept = useMutation({
     mutationKey: ["acceptFriendRequest"],
-    mutationFn: async (sender: number | undefined) => {
+    mutationFn: async (senderId: number) => {
       const { data } = await axios.patch(`/friendship/acceptRequest`, {
-        sender: sender,
+        sender: senderId,
       });
       return data;
     },
-    onSuccess: () => {
+    onSuccess: (data, senderId) => {
+      const sender = users.find(u => u.id === senderId);
+      toast.success(`You are now friends with ${sender?.username || 'this user'}!`);
+      
       Client.refetchQueries(["friendrequests"]);
       Client.refetchQueries(["friends"]);
+    },
+    onError: (error: any) => {
+      toast.error(error.response?.data?.message || "Failed to accept friend request");
     },
   });
 
   const Decline = useMutation({
     mutationKey: ["DeclineFriend"],
-    mutationFn: async (id: number | undefined) => {
-      const { data } = await axios.delete(`/friendship/${id}`);
+    mutationFn: async (senderId: number) => {
+      const { data } = await axios.delete(`/friendship/${senderId}`);
       return data;
     },
     onSuccess: () => {
+      toast.success("Friend request declined");
       Client.refetchQueries(["friendrequests"]);
-      Client.refetchQueries(["friends"]);
+    },
+    onError: (error: any) => {
+      toast.error(error.response?.data?.message || "Failed to decline request");
     },
   });
 
   return (
     <div
       ref={divref}
-      className="absolute right-0 top-[56px] max-h-[200px] p-4 flex flex-col gap-1 rounded-b-2xl bg-black  bg-opacity-20 ackdrop-blur-lg drop-shadow-lg overflow-auto scrollbar scrollbar"
+      className="absolute right-0 top-[56px] max-h-[200px] p-4 flex flex-col gap-1 rounded-b-2xl bg-black bg-opacity-20 backdrop-blur-lg drop-shadow-lg overflow-auto scrollbar"
     >
       {users.length === 0 ? (
         <p className="text-center">No friend requests</p>
       ) : (
         users.map((user: userDto) => {
+          const isLoading = Accept.isPending || Decline.isPending;
+          
           return (
             <div
               key={user.id}
-              className={`flex justify-between px-4 py-2 rounded-xl gap-2 sm:gap-8 bg-white bg-opacity-20 ackdrop-blur-lg drop-shadow-lg`}
+              className={`flex justify-between px-4 py-2 rounded-xl gap-2 sm:gap-8 bg-white bg-opacity-20 backdrop-blur-lg drop-shadow-lg`}
             >
               <div className="flex items-center gap-4">
                 <Image
-                  className=" sm:w-[48px] sm:h-[48px] rounded-full self-center"
-                  src={user.image}
+                  className="sm:w-[48px] sm:h-[48px] rounded-full self-center"
+                  src={user.avatar}
                   width={36}
                   height={36}
                   alt="user image"
@@ -70,21 +82,23 @@ const FriendRequestDropdown = ({ users, setIsOpen }: Props) => {
                   <h3 className="text-[12px] sm:text-[24px]">
                     {user.username}
                   </h3>
-                  <p className="text-[6px] sm:text-[8px] ">
+                  <p className="text-[6px] sm:text-[8px]">
                     sent you a friend request
                   </p>
                 </div>
               </div>
-              <div className="flex items-center gap-2 text-[12px] sm:gap-4 sm:text[24px]">
+              <div className="flex items-center gap-2 text-[12px] sm:gap-4 sm:text-[24px]">
                 <button
-                  className="bg-red rounded-xl px-2 py-1 sm:px-4 sm:py-2"
+                  className="bg-red rounded-xl px-2 py-1 sm:px-4 sm:py-2 hover:opacity-80 disabled:opacity-50 transition-opacity"
                   onClick={() => Decline.mutate(user.id)}
+                  disabled={isLoading}
                 >
                   Decline
                 </button>
                 <button
-                  className="bg-blue rounded-xl px-2 py-1 sm:px-4 sm:py-2"
+                  className="bg-blue rounded-xl px-2 py-1 sm:px-4 sm:py-2 hover:opacity-80 disabled:opacity-50 transition-opacity"
                   onClick={() => Accept.mutate(user.id)}
+                  disabled={isLoading}
                 >
                   Accept
                 </button>
@@ -116,10 +130,16 @@ const FriendRequest = () => {
   };
 
   useEffect(() => {
-    socket.on("friendRequest", () => {
+    const handleFriendRequest = () => {
       setNotif(true);
       Client.refetchQueries(["friendrequests"]);
-    });
+      toast.success("You have a new friend request!");
+    };
+
+    socket.on("friendRequest", handleFriendRequest);
+    return () => {
+      socket.off("friendRequest", handleFriendRequest);
+    };
   }, []);
 
   return (
@@ -131,9 +151,7 @@ const FriendRequest = () => {
       >
         <UserPlus2 size={32} color="#7ac7c4" strokeWidth={1.5} />
         {notif && (
-          <div className="absolute h-3 w-3 top-0 right-0 bg-red rounded-full">
-            {" "}
-          </div>
+          <div className="absolute h-3 w-3 top-0 right-0 bg-red rounded-full" />
         )}
       </button>
       {isOpen && <FriendRequestDropdown users={data} setIsOpen={setIsOpen} />}

@@ -3,11 +3,11 @@ import { ChannelsService } from './channels.service';
 import { ChannelDTO } from './dto/create-channel.dto';
 import { UpdateChannelDto } from './dto/update-channel.dto';
 import { UseGuards } from '@nestjs/common';
-import { Jwt2faAuthGuard } from 'src/auth/guards/jwt-2fa-auth.guard';
+import { JwtAccessGuard  } from 'src/auth/guards/jwt-access.guard';
 import { User } from 'src/entities/user.entity';
 
 @Controller('channels')
-@UseGuards(Jwt2faAuthGuard)
+@UseGuards(JwtAccessGuard)
 export class ChannelsController {
   constructor(private readonly channelsService: ChannelsService) {}
 

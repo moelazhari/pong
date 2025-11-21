@@ -67,7 +67,7 @@ export const Friend = ({ user, isMe }: { user: any; isMe: boolean }) => {
         <div className="grow flex items-center gap-4">
           <Image
             className="w-[48px] h-[48px] rounded-full self-center"
-            src={user.image}
+            src={user.avatar}
             width={1000}
             height={1000}
             alt="user image"

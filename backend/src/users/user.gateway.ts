@@ -4,7 +4,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Status, User } from 'src/entities/user.entity';
 import { Repository } from 'typeorm';
 import { JwtService } from '@nestjs/jwt';
-
+import * as cookieParse from 'cookie';
 
 @WebSocketGateway()
 export class UsersGateway implements OnGatewayConnection, OnGatewayDisconnect {
@@ -12,30 +12,36 @@ export class UsersGateway implements OnGatewayConnection, OnGatewayDisconnect {
         @InjectRepository(User) private userRepo: Repository<User>,
         private jwtService: JwtService) 
         { }
-    @WebSocketServer() server: Server;
-
+        @WebSocketServer() server: Server;
+        
     async handleConnection(socket: Socket) {
-        const cookie: string = socket.handshake.headers.cookie;
-        if (!cookie || cookie === undefined)
-          return;
-
-        const token = cookie.split('=')[1];
-        const decodedJwt = this.jwtService.decode(token) as User;
+        const cookieHeader = socket.handshake.headers.cookie;
+        if (!cookieHeader) return;
+        
+        const cookies = cookieParse.parse(cookieHeader);
+        
+        const token = cookies['access_token'];
+        if (!token) return;
+        
+        let decodedJwt;
+        try {
+            decodedJwt = this.jwtService.verify(token);
+        } catch (error) {
+            return;
+        }
+        
         const id = decodedJwt.id;
-
-        if (id) {
-
-            const user = await this.userRepo.findOneBy({id});
-            if (user){
-                user.status = Status.ONLINE;
-                await this.userRepo.save(user);
-                this.updeteUser(id);
-            }
-
-            socket.data.username = id.toString();
-            socket.join(id.toString());
-            }
-
+        if (!id) return;
+        
+        const user = await this.userRepo.findOneBy({ id });
+        if (user) {
+            user.status = Status.ONLINE;
+            await this.userRepo.save(user);
+            this.updeteUser(id);
+        }
+            
+        socket.data.username = id.toString();
+        socket.join(id.toString());
     }
 
     async handleDisconnect(socket: Socket) {

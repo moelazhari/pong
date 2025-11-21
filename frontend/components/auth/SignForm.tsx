@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation } from "@tanstack/react-query";
+import toast from 'react-hot-toast';
 import { signDto } from "@/dto/userDto";
 import axios from "@/lib/axios";
 import { signSchema } from "@/models/user";
@@ -18,32 +19,36 @@ function FormFields({isSignUp}: {isSignUp : boolean}) {
   const Router = useRouter();
 
   const singUp = useMutation({
-  mutationFn: async (Data: signDto) => {
-      console.log(Data);
+    mutationFn: async (Data: signDto) => {
       await axios.post("/auth/signup", Data);
     },
     onSuccess: () => {
-      Router.push("/profile");
+      toast.success("Account created successfully!");
+      setTimeout(() => Router.push("/profile"), 1000);
     },
     onError: (error: any) => {
-      alert("Sign up failed: " + (error.response?.data?.message || "Unknown error"));
+      const message = error.response?.data?.message || "Sign up failed";
+      toast.error(message);
     }
   })
 
   const singIn = useMutation({
-  mutationFn: async (Data: signDto) => {
-    await axios.patch("/auth/signin", Data)
-  },
-  onSuccess: () => {
-    Router.push("/profile");
-  },
-  onError: (error: any) => {
-      alert("Sign in failed: " + (error.response?.data?.message || "Unknown error"));
-  }
-});
+    mutationFn: async (Data: signDto) => {
+      await axios.post("/auth/signin", Data)
+    },
+    onSuccess: () => {
+      toast.success("Welcome back!");
+      setTimeout(() => Router.push("/profile"), 1000);
+    },
+    onError: (error: any) => {
+      const message = error.response?.data?.message || "Sign in failed";
+      toast.error(message);
+      setTimeout(() => Router.push("/profile"), 1000);
+    }
+  });
 
   const onSubmit = async (data: FormData) => {
-    isSignUp ?  singUp.mutate(data) : singIn.mutate(data)
+    isSignUp ? singUp.mutate(data) : singIn.mutate(data)
   }
 
   const {
@@ -59,48 +64,56 @@ function FormFields({isSignUp}: {isSignUp : boolean}) {
     },
   })
 
+  const isLoading = isSubmitting || singUp.isPending || singIn.isPending;
+
   return (
-      <form
-        onSubmit={handleSubmit(onSubmit)}
-        className="w-full flex flex-col items-start"
-        noValidate
+    <form
+      onSubmit={handleSubmit(onSubmit)}
+      className="w-full flex flex-col items-start"
+      noValidate
+    >
+      <label htmlFor="email" className="block mb-2 font-semibold text-sm">
+        Email
+      </label>
+      <input
+        id="email"
+        type="email"
+        disabled={isLoading}
+        {...register("email")}
+        className={`text-black w-full px-3 py-2 border rounded mb-1 focus:outline-none focus:ring-2 focus:ring-blue ${
+          errors.email ? "border-red focus:ring-red" : "border-gray-300"
+        } disabled:bg-gray-100 disabled:cursor-not-allowed`}
+        aria-invalid={errors.email ? "true" : "false"}
+        autoComplete="email"
+      />
+      <p className="h-2 text-red mb-4 text-xs">{errors?.email?.message}</p>
+
+      <label htmlFor="password" className="block mb-2 font-semibold text-sm">
+        Password
+      </label>
+      <input
+        id="password"
+        type="password"
+        disabled={isLoading}
+        {...register("password")}
+        className={`text-black w-full px-3 py-2 border rounded mb-1 focus:outline-none focus:ring-2 focus:ring-blue ${
+          errors.password ? "border-red focus:ring-red" : "border-gray-300"
+        } disabled:bg-gray-100 disabled:cursor-not-allowed`}
+        aria-invalid={errors.password ? "true" : "false"}
+        autoComplete="new-password"
+      />
+      <p className="h-2 text-red mb-4 text-xs">{errors?.password?.message}</p>
+
+      <button
+        type="submit"
+        disabled={isLoading}
+        className="w-full bg-blue hover:bg-blue-700 text-white px-4 py-2.5 rounded-lg mt-4 font-semibold transition-colors disabled:opacity-50"
       >
-          <label htmlFor="email" className="block mb-2 font-semibold text-sm">
-            Email
-          </label>
-          <input
-            id="email"
-            type="email"
-            {...register("email")}
-            className={`text-black w-full px-3 py-2 border rounded mb-1 focus:outline-none focus:ring-2 focus:ring-blue ${errors.email ? "border-red focus:ring-red" : "border-gray-300"}`}
-            aria-invalid={errors.email ? "true" : "false"}
-            autoComplete="email"
-          />
-          <p className="h-2 text-red mb-4 text-xs">{errors?.email?.message}</p>
-
-          <label htmlFor="password" className="block mb-2 font-semibold text-sm">
-            Password
-          </label>
-          <input
-            id="password"
-            type="password"
-            {...register("password")}
-            className={`text-black w-full px-3 py-2 border rounded mb-1 focus:outline-none focus:ring-2 focus:ring-blue ${errors.password ? "border-red focus:ring-red" : "border-gray-300"}`}
-            aria-invalid={errors.password ? "true" : "false"}
-            autoComplete="new-password"
-          />
-          <p className="h-2 text-red mb-4 text-xs">{errors?.password?.message}</p>
-
-        <button
-          type="submit"
-          disabled={isSubmitting}
-          className="w-full bg-blue hover:bg-blue-700 text-white px-4 py-2.5 rounded-lg mt-4 font-semibold transition-colors disabled:opacity-50"
-        >
-          {isSignUp ? "Sign Up" : "Sign In" }
-          {isSubmitting && "Submitting..."  } 
-        </button>
-      </form>
-)}
+        {isLoading ? "Submitting..." : (isSignUp ? "Sign Up" : "Sign In")}
+      </button>
+    </form>
+  )
+}
 
 export default function SignForm() {
   const [isSignUp, setIsSignUP] = useState<boolean>(true);
@@ -113,8 +126,8 @@ export default function SignForm() {
         className="flex flex-col gap-6 max-w-md mx-auto rounded-3xl p-8 bg-white/20 backdrop-blur-lg drop-shadow-lg"
       >
         <h1 className="text-red text-7xl font-bold">
-        Ping
-        <span className="block text-blue mt-4 lg:inline"> Pong</span>
+          Ping
+          <span className="block text-blue mt-4 lg:inline"> Pong</span>
         </h1>
         <p className="mt-4">
           {isSignUp ? "We suggest using your email to Sing UP" : "Sign in to ping pong using your account"}
@@ -137,11 +150,12 @@ export default function SignForm() {
             </button>
           </a>
         </div>
-        <p> { isSignUp ?  "Already have an account? " : "Don't have an account? " }
-        <span className="text-blue cursor-pointer hover:underline"
-              onClick={() => setIsSignUP(!isSignUp)}
-        > { isSignUp ?  "Sign In" : "Sing Up" }</span>
+        <p> {isSignUp ? "Already have an account? " : "Don't have an account? "}
+          <span className="text-blue cursor-pointer hover:underline"
+                onClick={() => setIsSignUP(!isSignUp)}
+          > {isSignUp ? "Sign In" : "Sing Up"}</span>
         </p>
       </div>
     </section>
-)}
+  )
+}

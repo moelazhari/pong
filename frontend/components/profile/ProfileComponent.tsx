@@ -9,34 +9,30 @@ import ProfileFriends from "@/components/profile/ProfileFriends";
 import MidButtom from "@/components/profile/MidBottom";
 import { useQuery } from "@tanstack/react-query";
 import axios from "@/lib/axios";
-import { useRouter } from "next/navigation";
 import ProfileSkeleton from "@/components/skeletons/ProfileSkeleton";
 import socket from "../socketG";
 import { Client } from "@/providers/QueryProvider";
 
 export const ProfileComponent = ({ username }: { username: string }) => {
-  const router = useRouter();
 
   const user = useQuery({
     queryKey: ["user", username],
     queryFn: async () => {
-      const { data } = await axios.get(`/users/getUser/${username}`);
+      const { data } = username === "me" ? await axios.get(`users/me`) : await axios.get(`users/username/${username}`);
       return data;
     },
   });
 
-  if (user.isLoading) 
+  if (user.isLoading)
     return <ProfileSkeleton />;
   else if (!user.data) {
-    router.push("/profile");
     return <div></div>;
   }
 
-
-    socket.on("profile", (id: number) => {
-      if (id == user.data.id) 
-        Client.refetchQueries(["user", username]);
-    });
+  socket.on("profile", (id: number) => {
+    if (id == user.data.id) 
+      Client.refetchQueries(["user", username]);
+  });
 
   return (
     <main className="h-full w-full pt-[56px] sm:p-10 sm:pt-[96px] sm:flex sm:justify-center gap-8">

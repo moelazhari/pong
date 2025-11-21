@@ -1,4 +1,3 @@
-
 const uploadImage = async(image : any) => {
 
     const formdata = new FormData();
@@ -13,7 +12,6 @@ const uploadImage = async(image : any) => {
     const data = await res.json();
 
     return data.secure_url;
-
 }
 
-export default uploadImage
+export default uploadImage;

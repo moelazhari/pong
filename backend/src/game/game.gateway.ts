@@ -3,8 +3,6 @@ import { Server, Socket } from 'socket.io';
 import { gameService } from './game.service';
 import { engineService } from './engine.service';
 import { Room } from './interfaces/room.interface';
-import { AuthService } from 'src/auth/auth.service';
-import {UseGuards} from '@nestjs/common'
 
 @WebSocketGateway()
 export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
@@ -30,8 +28,9 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
   @SubscribeMessage('invite-freind')
   handleInviteFreind(client: Socket, data: any) {
-    if (client.data.username === data.reciever || this.gameService.isInGame(data.reciever) !== null)
-      return;
+    if (client.data.username === data.reciever || this.gameService.isInGame(data.reciever) !== null){
+        return;
+    }
     this.server.to(data.reciever.toString()).emit('game-invitation', {sender: client.data.username, senderSocketId: client.id, map: data.map});
   }
 

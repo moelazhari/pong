@@ -44,9 +44,7 @@ export class AuthService {
       completeProfile: false,
     };
 
-    console.log("befor creating the usr in db");
     const createdUser = await this.userService.create(user);
-    console.log("after creating the usr in db");
 
     return this.generateTokens(createdUser.id, false);
   }
@@ -65,31 +63,16 @@ export class AuthService {
     throw new UnauthorizedException('Invalid credentials');
   }
 
-  // If 2FA is enabled
-  if (user.fact2Auth) {
     await this.userService.updateProfile(user.id, { status: Status.ONLINE });
     
-    const tokens = await await this.generateTokens(user.id, true);
+    const tokens = await this.generateTokens(user.id, true);
 
     return {
-    accessToken : tokens.accessToken,
-    refreshToken : tokens.refreshToken,
-    refreshTokenExpiry : tokens.refreshTokenExpiry,
-    requires2FA: false,
+      accessToken : tokens.accessToken,
+      refreshToken : tokens.refreshToken,
+      refreshTokenExpiry : tokens.refreshTokenExpiry,
+      accessTokenExpiry: tokens.accessTokenExpiry,
     };
-  }
-
-  // No 2FA
-  await this.userService.updateProfile(user.id, { status: Status.ONLINE });
-  
-  const tokens = await await this.generateTokens(user.id, true);
-
-  return {
-    accessToken : tokens.accessToken,
-    refreshToken : tokens.refreshToken,
-    refreshTokenExpiry : tokens.refreshTokenExpiry,
-    requires2FA: false,
-  };
 }
 
   async refreshTokens(userId: number) {
@@ -205,11 +188,14 @@ private async generateTokens(userId: number, is2FAVerified: boolean) {
     expiresIn: process.env.REFRESH_TOKEN_EXP_D,
   });
 
-  const refreshTokenExpiry = 7 * 24 * 60 * 60; // 7 days
+  const accessTokenExpiry= 15 * 60;
+  const refreshTokenExpiry = 7 * 24 * 60 * 60;
+
 
   return {
     accessToken,
     refreshToken,
+    accessTokenExpiry,
     refreshTokenExpiry,
   };
 }

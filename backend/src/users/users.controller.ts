@@ -8,6 +8,7 @@ import {
   Delete,
   Req,
   UseGuards,
+  DefaultValuePipe,
   ParseIntPipe,
   HttpCode,
   HttpStatus,
@@ -27,6 +28,9 @@ import { UpdateProfileDTO } from './dto/update-user.dto';
 export class UsersController {
   constructor(private readonly usersService: UsersService) {}
 
+  // ========================================
+  // COLLECTION ENDPOINTS - Wrapped with metadata
+  // ========================================
   @Get()
   async findAll(
     @Req() req,
@@ -46,16 +50,21 @@ export class UsersController {
   async search(
     @Req() req,
     @Query('q') query: string,
-    @Query('limit') limit: number = 10,
+    @Query('limit', new DefaultValuePipe(10), ParseIntPipe) limit: number,
   ) {
-    // if (!query || query.trim().length < 2) {
-    //   throw new BadRequestException('Search query must be at least 2 characters');
-    // }
-
     const users = await this.usersService.search(req.user.id, query.trim(), limit);
     return { users };
   }
 
+  @Get('blocked/list')
+  async getBlockedUsers(@Req() req) {
+    const blockedUsers = await this.usersService.blockedUsers(req.user.id);
+    return { blockedUsers };
+  }
+
+  // ========================================
+  // SINGLE RESOURCE ENDPOINTS - Direct data
+  // ========================================
   @Get('me')
   async getMe(@Req() req) {
     const user = await this.usersService.findOneById(req.user.id);
@@ -63,8 +72,54 @@ export class UsersController {
     if (!user) {
       throw new NotFoundException('User not found');
     }
+    return user;
+  }
 
-    return {"user" : user};
+  @Get('username/:username')
+  async findByUsername(@Req() req, @Param('username') username: string) {
+    const user = await this.usersService.findOneByUsername(username);
+
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
+    if (user.id === req.user.id) {
+      throw new BadRequestException('Use /users/me to get your own profile');
+    }
+
+    const blockStatus = await this.usersService.isBlocked(req.user.id, user.id);
+    if (blockStatus.isBlock) {
+      throw new NotFoundException('User not found');
+    }
+    return user;
+  }
+
+  @Get(':id')
+  async findById(
+    @Req() req,
+    @Param('id', ParseIntPipe) id: number,
+  ) {
+    const user = await this.usersService.findOneById(id);
+
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
+    if (user.id === req.user.id) {
+      throw new BadRequestException('Use /users/me to get your own profile');
+    }
+
+    const blockStatus = await this.usersService.isBlocked(req.user.id, user.id);
+    if (blockStatus.isBlock) {
+      throw new NotFoundException('User not found');
+    }
+    return user;
+  }
+
+  @Get('stats/:userId')
+  async getUserStats(@Param('userId', ParseIntPipe) userId: number) {
+    const stats = await this.usersService.getUserStats(userId);
+    return stats;
   }
 
   @Patch('me/profile')
@@ -97,7 +152,6 @@ export class UsersController {
   }
 
   @Patch('stats/:userId')
-  // @UseGuards(AdminGuard)
   @HttpCode(HttpStatus.OK)
   async updateStats(
     @Param('userId', ParseIntPipe) userId: number,
@@ -108,56 +162,6 @@ export class UsersController {
       message: 'Stats updated successfully',
       user,
     };
-  }
-
-  @Get('check-username/:username')
-  @HttpCode(HttpStatus.OK)
-  async checkUsername(@Param('username') username: string) {
-    const exists = await this.usersService.isUserNameExist(username);
-    return { exists, available: !exists };
-  }
-
-  @Get('username/:username')
-  async findByUsername(@Req() req, @Param('username') username: string) {
-    const user = await this.usersService.findOneByUsername(username);
-
-    if (!user) {
-      throw new NotFoundException('User not found');
-    }
-
-    if (user.id === req.user.id) {
-      throw new BadRequestException('Use /users/me to get your own profile');
-    }
-
-    const blockStatus = await this.usersService.isBlocked(req.user.id, user.id);
-    if (blockStatus.isBlock) {
-      throw new NotFoundException('User not found');
-    }
-
-    return user;
-  }
-
-  @Get(':id')
-  async findById(
-    @Req() req,
-    @Param('id', ParseIntPipe) id: number,
-  ) {
-    const user = await this.usersService.findOneById(id);
-
-    if (!user) {
-      throw new NotFoundException('User not found');
-    }
-
-    if (user.id === req.user.id) {
-      throw new BadRequestException('Use /users/me to get your own profile');
-    }
-
-    const blockStatus = await this.usersService.isBlocked(req.user.id, user.id);
-    if (blockStatus.isBlock) {
-      throw new NotFoundException('User not found');
-    }
-  
-    return user;
   }
 
   @Post('block')
@@ -181,10 +185,14 @@ export class UsersController {
     return { message: 'User unblocked successfully' };
   }
 
-  @Get('blocked/list')
-  async getBlockedUsers(@Req() req) {
-    const blockedUsers = await this.usersService.blockedUsers(req.user.id);
-    return { blockedUsers };
+  // ========================================
+  // UTILITY/CHECK ENDPOINTS - Direct boolean/status
+  // ========================================
+  @Get('check-username/:username')
+  @HttpCode(HttpStatus.OK)
+  async checkUsername(@Param('username') username: string) {
+    const exists = await this.usersService.isUserNameExist(username);
+    return { exists, available: !exists };
   }
 
   @Get('blocked/check/:userId')
@@ -194,11 +202,5 @@ export class UsersController {
   ) {
     const blockStatus = await this.usersService.isBlocked(req.user.id, userId);
     return blockStatus;
-  }
-
-  @Get('stats/:userId')
-  async getUserStats(@Param('userId', ParseIntPipe) userId: number) {
-    const stats = await this.usersService.getUserStats(userId);
-    return stats;
   }
 }

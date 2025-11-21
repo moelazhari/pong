@@ -21,8 +21,6 @@ export class AuthStratedy extends PassportStrategy(Strategy, '42') {
 
     const image = profile._json.image.link ? profile._json.image.link : '../../assets/avatar.png';
 
-    console.log(profile.emails[0].value);
-
     const user = {
       email: profile.emails[0].value,
       username: profile.username,

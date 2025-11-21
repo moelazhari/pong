@@ -10,8 +10,11 @@ import { JwtRefreshStrategy } from './strategy/jwt-refresh.strategy';
 @Module({
   imports: [
     UsersModule,
-    PassportModule,
-    JwtModule.register({}),
+    PassportModule,  
+    JwtModule.register({
+      secret: process.env.ACCESS_TOKEN_SECRET,
+      signOptions: { expiresIn: process.env.ACCESS_TOKEN_EXP_D || '15m' }, 
+    }),
   ],
   controllers: [AuthController],
   providers: [
@@ -19,6 +22,6 @@ import { JwtRefreshStrategy } from './strategy/jwt-refresh.strategy';
     JwtAccessStrategy,
     JwtRefreshStrategy,
   ],
-  exports: [AuthService],
+  exports: [AuthService, JwtModule],
 })
 export class AuthModule {}

@@ -1,45 +1,95 @@
-import { Controller, Get, Post, Patch, Param, Body, Delete, UseGuards, Req } from '@nestjs/common';
+import { 
+  Controller, 
+  Get, 
+  Post, 
+  Patch, 
+  Param, 
+  Body, 
+  Delete, 
+  UseGuards, 
+  Req,
+  HttpCode,
+  HttpStatus,
+  BadRequestException,
+  NotFoundException,
+} from '@nestjs/common';
 import { FriendshipService } from './friendship.service';
-import { Jwt2faAuthGuard } from 'src/auth/guards/jwt-2fa-auth.guard';
+import { JwtAccessGuard } from 'src/auth/guards/jwt-access.guard';
 
 @Controller('friendship')
-@UseGuards(Jwt2faAuthGuard)
+@UseGuards(JwtAccessGuard)
 export class FriendshipController {
   constructor(private readonly friendshipService: FriendshipService) {}
 
   @Post('sendRequest')
-  async create(@Body() body: any, @Req() Req) {
-    return await this.friendshipService.create(Req.user.id, body.receiver);
+  @HttpCode(HttpStatus.CREATED)
+  async create(@Body() body: { receiver: number }, @Req() req) {
+    if (!body.receiver) {
+      throw new BadRequestException('Receiver ID is required');
+    }
+
+    if (req.user.id === body.receiver) {
+      throw new BadRequestException('You cannot send a friend request to yourself');
+    }
+
+    await this.friendshipService.create(req.user.id, body.receiver);
+    
+    return { 
+      message: 'Friend request sent successfully' 
+    };
   }
 
+
   @Get('friendrequests')
-  friendReq(@Req() req) {
-    return this.friendshipService.friendReq(req.user.username);
+  async friendReq(@Req() req) {
+    const requests = await this.friendshipService.friendReq(req.user.id);
+
+    return requests;
   }
 
   @Patch('acceptRequest')
-  async accept(@Body() body: any, @Req() req) {
-    return await this.friendshipService.accept(req.user.id, body.sender);
+  @HttpCode(HttpStatus.OK)
+  async accept(@Body() body: { sender: number }, @Req() req) {
+    if (!body.sender) {
+      throw new BadRequestException('Sender ID is required');
+    }
+
+    await this.friendshipService.accept(req.user.id, body.sender);
+    
+    return { 
+      message: 'Friend request accepted' 
+    };
   }
 
   @Get('getFriends/:id')
   async getFriends(@Req() req, @Param('id') id: number) {
-      return await this.friendshipService.getFriends(id);
+    const friends = await this.friendshipService.getFriends(id);
+    return friends;
   }
 
   @Get('status/:id')
-  async status(@Param('id') id: number, @Req() req){
+  async status(@Param('id') id: number, @Req() req) {
     return this.friendshipService.status(req.user.id, id);
   }
 
   @Get('search/:channelid/:query')
-  async search(@Param('channelid') channelId: number,@Param('query') query: string, @Req() req) {
-    return await this.friendshipService.search(channelId, req.user.id, query);
+  async search(
+    @Param('channelid') channelId: number,
+    @Param('query') query: string, 
+    @Req() req
+  ) {
+    const results = await this.friendshipService.search(channelId, req.user.id, query);
+    return { results };
   }
 
   @Delete(':id')
-  remove(@Param('id') id: number, @Req() req) {
-    return this.friendshipService.remove(req.user.id, id);
-  }
+  @HttpCode(HttpStatus.OK)
+  async remove(@Param('id') id: number, @Req() req) {
 
+    await this.friendshipService.remove(req.user.id, id);
+    
+    return { 
+      message: 'Friend request declined or friendship removed' 
+    };
+  }
 }

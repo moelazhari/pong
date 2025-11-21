@@ -6,7 +6,7 @@ import { gameSimulation } from "./gameSimulation.service";
 import { AuthModule } from "src/auth/auth.module";
 import { TypeOrmModule } from "@nestjs/typeorm";
 import { GameHistory, User } from "src/entities/user.entity";
-import { UsersGateway } from '../usersGateway/user.gateway';
+import { UsersGateway } from '../users/user.gateway';
 import { JwtService } from '@nestjs/jwt';
 
 @Module({

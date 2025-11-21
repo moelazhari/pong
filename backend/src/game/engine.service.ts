@@ -5,7 +5,7 @@ import { Server } from "socket.io";
 import { InjectRepository } from "@nestjs/typeorm";
 import { GameHistory, Status, User } from "src/entities/user.entity";
 import { Repository } from "typeorm";
-import { UsersGateway } from "src/usersGateway/user.gateway";
+import { UsersGateway } from "src/users/user.gateway";
 
 @Injectable()
 export class engineService {
