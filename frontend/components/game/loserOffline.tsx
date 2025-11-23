@@ -26,7 +26,7 @@ export default function Won(){
         <div className='flex flex-col items-center gap-8'>
           <h1 className='text-6xl font-bold text-[#fc4f4f] '>You Lost</h1>
           <div className='w-[200px] h-[200px] sm:w-[400px] sm:h-[400px] border-black rounded-full overflow-hidden '>
-            <Image width={400} height={0} alt="#" src={data.image} className="h-full w-full l"/>
+            <Image width={400} height={0} alt="#" src={data.avatar} className="h-full w-full l"/>
           </div>
         </div>
       </main>

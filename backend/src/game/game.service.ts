@@ -50,69 +50,67 @@ export class gameService{
 	}
 }
 
-findRoom(roomId: string): Room | undefined {
-  return this.rooms.get(roomId);
-}
-
-emitToplayer(username: string, event: string, data?: any): void
-{
-  const player: Array<Socket> | undefined = this.matchMakingQue.get(username);
-  if (player) {
-    player.forEach((socket: Socket) => {
-      socket.emit(event, data);
-    });
+  findRoom(roomId: string): Room | undefined {
+    return this.rooms.get(roomId);
   }
-}
 
-creatRoom(socket1: Array<Socket>, socket2: Array<Socket>, user1:string, user2:string): Room
-{
-  const player1: Player = {sockets: socket1, username: user1.toString(), position: 'left'};
-  const player2: Player = {sockets: socket2, username: user2.toString(), position: 'right'};
-  
-  const room : Room = {id: `${user1}+${user2}`, players: [player1, player2]};
-  if (player1 && player2) {
-    this.rooms.set(room.id, room);
-    
-    socket1.forEach((socket: Socket) => {
-      socket.join(room.id);
-    });
-    
-    socket2.forEach((socket: Socket) => {
-      socket.join(room.id);
-    });
+  emitToplayer(username: string, event: string, data?: any): void
+  {
+    const player: Array<Socket> | undefined = this.matchMakingQue.get(username);
+    if (player) {
+      player.forEach((socket: Socket) => {
+        socket.emit(event, data);
+      });
+    }
   }
-  return room;
-}
 
-findMatch() : Room | null{
-  if (this.matchMakingQue.size >= 2) {
-    const iterator: any = this.matchMakingQue.entries();
-    const [username1, sockets1] = [...iterator.next().value];
-    const [username2, sockets2] = [...iterator.next().value];
+  creatRoom(socket1: Array<Socket>, socket2: Array<Socket>, user1:string, user2:string): Room
+  {
+    const player1: Player = {sockets: socket1, username: user1.toString(), position: 'left'};
+    const player2: Player = {sockets: socket2, username: user2.toString(), position: 'right'};
     
-    this.matchMakingQue.delete(username1);
-    this.matchMakingQue.delete(username2);
-    
-    sockets1.forEach((socket: Socket) => {
-      socket.emit('match-found', username2);
-    });
-    sockets2.forEach((socket: Socket) => {
-      socket.emit('match-found', username1);
-    });
-    const room: Room = this.creatRoom(sockets1, sockets2, username1, username2);
+    const room : Room = {id: `${user1}+${user2}`, players: [player1, player2]};
+    if (player1 && player2) {
+      this.rooms.set(room.id, room);
+      
+      socket1.forEach((socket: Socket) => {
+        socket.join(room.id);
+      });
+      
+      socket2.forEach((socket: Socket) => {
+        socket.join(room.id);
+      });
+    }
     return room;
   }
-  return null;
-}
 
-isInGame(username: string): string | null { 
-  const room: Room | undefined = Array.from(this.rooms.values()).find((room: Room) => {
-    return room.players.find((player: Player) => player.username.toString() === username.toString());
-  });
-  if (room !== undefined) {
-    return room.id;
+  findMatch() : Room | null{
+    if (this.matchMakingQue.size >= 2) {
+      const iterator: any = this.matchMakingQue.entries();
+      const [username1, sockets1] = [...iterator.next().value];
+      const [username2, sockets2] = [...iterator.next().value];
+      
+      this.matchMakingQue.delete(username1);
+      this.matchMakingQue.delete(username2);
+      
+      sockets1.forEach((socket: Socket) => {
+        socket.emit('match-found', username2);
+      });
+      sockets2.forEach((socket: Socket) => {
+        socket.emit('match-found', username1);
+      });
+      const room: Room = this.creatRoom(sockets1, sockets2, username1, username2);
+      return room;
+    }
+    return null;
   }
-  return null;
-}
 
+  isInGame(userId: number): string | null {
+    for (const [roomId, room] of this.rooms) {
+      if (room.players.some(p => p.username === userId.toString())) {
+        return roomId;
+      }
+    }
+    return null;
+  }
 }

@@ -32,7 +32,7 @@ function MePlayer({ score, name }: pScore) {
           <div className="flex flex-col items-center">
             <div className="w-[80px] h-[80px] rounded-full overflow-hidden">
               <Image
-                src={data.image}
+                src={data.avatar}
                 width={100}
                 height={100}
                 alt="#"
@@ -60,7 +60,7 @@ function MePlayer({ score, name }: pScore) {
           <div className="flex flex-col items-center">
             <div className="w-[80px] h-[80px] rounded-full overflow-hidden">
               <Image
-                src={data.image}
+                src={data.avatar}
                 width={100}
                 height={100}
                 alt="#"
@@ -109,7 +109,7 @@ function OtherPlayer({ score, name }: pScore) {
 		<div className="flex flex-col items-center">
 		  <div className="w-[80px] h-[80px] rounded-full overflow-hidden">
 			<Image
-			  src={data.image}
+			  src={data.avatar}
 			  width={100}
 			  height={100}
 			  alt="#"

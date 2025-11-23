@@ -16,6 +16,7 @@ import * as bcrypt from 'bcrypt';
 
 @Injectable()
 export class UsersService {
+  friendshipRepository: any;
   constructor(
     @InjectRepository(User)
     private usersRepository: Repository<User>,
@@ -304,4 +305,24 @@ async updateStats(userId: number, dto: UpdateStatsDTO): Promise<User> {
       totalGames,
     };
   }
+
+    async areFriends(userId1: number, userId2: number): Promise<boolean> {
+    const friendship = await this.friendshipRepository.findOne({
+      where: [
+        { 
+          sender: { id: userId1 }, 
+          receiver: { id: userId2 },
+          status: 'accepted'
+        },
+        { 
+          sender: { id: userId2 }, 
+          receiver: { id: userId1 },
+          status: 'accepted'
+        },
+      ],
+    });
+
+    return !!friendship;
+  }
+  
 }

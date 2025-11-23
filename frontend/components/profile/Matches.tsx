@@ -27,7 +27,7 @@ const Match = ({ match, id }: { match: MatchProps; id: number }) => {
         <div className="h-[64px] w-[64px] rounded-full overflow-hidden">
           <Image
             className="h-full w-full"
-            src={match.winner.image}
+            src={match.winner.avatar}
             width={64}
             height={64}
             alt="user image"
@@ -43,7 +43,7 @@ const Match = ({ match, id }: { match: MatchProps; id: number }) => {
         <div className="h-[64px] w-[64px] rounded-full overflow-hidden">
           <Image
             className="h-full w-full"
-            src={match.loser.image}
+            src={match.loser.avatar}
             width={64}
             height={64}
             alt="user image"

@@ -15,7 +15,7 @@ import { Client } from "@/providers/QueryProvider";
 import { useDispatch } from "react-redux";
 import { AppDispatch } from "@/redux/store";
 import { MoreHorizontal, Gamepad2, ArrowLeftCircle } from "lucide-react";
-import ChallengeDropDown from "@/components/common/ChallengeDropDown";
+import ChallengeDropDown from "@/components/friends/ChallengeDropDown";
 import useCloseOutSide from "@/hookes/useCloseOutSide";
 import { channel } from "diagnostics_channel";
 

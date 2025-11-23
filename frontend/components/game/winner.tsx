@@ -67,7 +67,7 @@ export default function Won({ setWon, setLost, me, other }: prop) {
               width={400}
               height={0}
               alt="#"
-              src={data.image}
+              src={data.avatar}
               className="h-full w-full l"
             />
           </div>

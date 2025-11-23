@@ -1,75 +1,97 @@
 'use client';
-
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import toast, { Toaster } from "react-hot-toast";
+import toast from "react-hot-toast";
 import socket from "@/components/socketG";
 import axios from "@/lib/axios";
+import Image from "next/image";
 
-const InviteDisplay = ({ socketId, setDisplay, userid, map }) => {
-  const [timeLeft, setTimeLeft] = useState(4);
-  const [image, setImage] = useState("/game/unknown.webp");
-  const [name, setName] = useState("");
+interface InviteData {
+  senderId: number;
+  senderSocketId: string;
+  senderUsername: string;
+  senderAvatar: string;
+  map: string;
+}
+
+interface InviteDisplayProps {
+  invite: InviteData;
+  onClose: () => void;
+}
+
+const InviteDisplay = ({ invite, onClose }: InviteDisplayProps) => {
+  const [timeLeft, setTimeLeft] = useState(10); // 10 seconds
   const router = useRouter();
 
-  useEffect(() => {
-    async function fetchUser() {
-      const { data } = await axios.get(`/users/getId/${userid}`);
-      setName(data.username);
-      setImage(data.image);
-    }
-    fetchUser();
-  }, [userid]);
-
+  // Countdown timer
   useEffect(() => {
     if (timeLeft <= 0) {
-      setDisplay(null);
-      toast.dismiss();
+      handleDecline();
+      return;
     }
-  }, [timeLeft, setDisplay]);
 
-  useEffect(() => {
     const timer = setInterval(() => {
       setTimeLeft((prev) => prev - 0.01);
     }, 10);
+
     return () => clearInterval(timer);
-  }, []);
+  }, [timeLeft]);
 
   const handleAccept = () => {
-    localStorage.setItem("map", map);
-    setDisplay(null);
-    socket.emit("accept-invitation", { senderUsername: userid, senderSocketId: socketId });
-    toast.dismiss();
+    localStorage.setItem("map", invite.map);
+    
+    socket.emit("accept-invitation", { 
+      senderUserId: invite.senderId,
+      senderSocketId: invite.senderSocketId 
+    });
+    
+    toast.success(`Joining game with ${invite.senderUsername}...`);
+    onClose();
   };
 
   const handleDecline = () => {
-    setDisplay(null);
     toast("You declined the game invitation", { icon: "👎" });
+    onClose();
   };
 
   return (
-    <div className="absolute right-3 bottom-10 z-10">
-      <div className="flex mt-1 justify-between bg-[rgb(78,113,163)] px-4 py-2 rounded-xl gap-2 sm:gap-8">
+    <div className="fixed right-4 bottom-4 z-50 animate-slide-in">
+      <div className="flex mt-1 justify-between bg-white/20 backdrop-blur-lg px-4 py-2 rounded-xl gap-2 sm:gap-8 shadow-lg border border-white/30">
         <div className="flex items-center gap-4">
-          <img className="sm:w-[48px] sm:h-[48px] rounded-full" src={image} alt="user image" />
+          <Image 
+            className="w-12 h-12 rounded-full object-cover" 
+            src={invite.senderAvatar} 
+            width={48}
+            height={48}
+            alt={`${invite.senderUsername}'s avatar`}
+          />
           <div className="text-left">
-            <h3 className="text-[12px] sm:text-[20px]">{name}</h3>
-            <p className="text-[8px] sm:text-[10px]">wants to play with you</p>
+            <h3 className="text-sm sm:text-lg font-semibold">{invite.senderUsername}</h3>
+            <p className="text-xs sm:text-sm text-gray-300">
+              wants to play {invite.map} with you
+            </p>
           </div>
         </div>
-        <div className="flex items-center gap-2 text-[12px] sm:gap-4 sm:text[24px]">
-          <button className="bg-[rgb(248,72,72)] rounded-xl px-2 py-1 sm:px-4 sm:py-2" onClick={handleDecline}>
+        <div className="flex items-center gap-2 text-xs sm:gap-4 sm:text-base">
+          <button 
+            className="bg-red hover:bg-red-600 rounded-xl px-3 py-1.5 sm:px-4 sm:py-2 transition-colors" 
+            onClick={handleDecline}
+          >
             Decline
           </button>
-          <button className="bg-[rgba(86,245,65,0.75)] rounded-xl px-2 py-1 sm:px-4 sm:py-2" onClick={handleAccept}>
+          <button 
+            className="bg-green-500 hover:bg-green-600 rounded-xl px-3 py-1.5 sm:px-4 sm:py-2 transition-colors" 
+            onClick={handleAccept}
+          >
             Accept
           </button>
         </div>
       </div>
-      <div className="relative h-2 rounded">
+      {/* Progress bar */}
+      <div className="relative h-1.5 bg-gray-700 rounded-full mt-2 overflow-hidden">
         <div
-          className="absolute bg-[rgb(146,230,135)] h-[5px] rounded-xl"
-          style={{ width: `${(timeLeft / 4) * 100}%` }}
+          className="absolute bg-green-500 h-full rounded-full transition-all duration-100"
+          style={{ width: `${(timeLeft / 10) * 100}%` }}
         />
       </div>
     </div>
@@ -77,46 +99,74 @@ const InviteDisplay = ({ socketId, setDisplay, userid, map }) => {
 };
 
 const Invite = () => {
-  const [display, setDisplay] = useState(null);
-  const [socketId, setSocketId] = useState("");
-  const [userId, setUserId] = useState(0);
-  const [map, setMap] = useState("default");
+  const [invite, setInvite] = useState<InviteData | null>(null);
   const router = useRouter();
 
   useEffect(() => {
+    // Listen for successful game match
     socket.on("play-a-friend", () => {
+      console.log('✅ play-a-friend event received');
+      toast.success("Game starting!");
       router.push("/game/match");
     });
-    socket.on("game-invitation", (data) => {
-      setDisplay(data.sender);
-      setMap(data.map);
-      setSocketId(data.senderSocketId);
-      setUserId(data.sender);
-      toast(`${data.sender} invited you to play ${data.map}`);
+
+    // Listen for game invitations
+    socket.on("game-invitation", async (data: { 
+      senderId: number; 
+      senderSocketId: string;
+      map: string;
+    }) => {
+      console.log('=== INVITATION RECEIVED ===');
+      console.log('Data:', data);
+
+      try {
+        // Fetch sender's full user data
+        console.log('Fetching user data for ID:', data.senderId);
+        const response = await axios.get(`/users/${data.senderId}`);
+        console.log('User data received:', response.data);
+        const sender = response.data;
+
+        const inviteData: InviteData = {
+          senderId: data.senderId,
+          senderSocketId: data.senderSocketId,
+          senderUsername: sender.username,
+          senderAvatar: sender.avatar,
+          map: data.map,
+        };
+
+        console.log('Setting invite:', inviteData);
+        setInvite(inviteData);
+        toast(`${sender.username} invited you to play!`, {
+          icon: "🎮",
+          duration: 10000,
+        });
+      } catch (error) {
+        console.error("Failed to fetch sender data:", error);
+        toast.error("Failed to load game invitation");
+      }
+    });
+
+    // Listen for errors
+    socket.on("error", (error: { message: string }) => {
+      console.error('Socket error:', error);
+      toast.error(error.message);
     });
 
     return () => {
       socket.off("game-invitation");
       socket.off("play-a-friend");
-      toast.dismiss();
+      socket.off("error");
     };
   }, [router]);
 
-  useEffect(() => {
-    let timer;
-    if (display !== null) {
-      timer = setTimeout(() => {
-        setDisplay(null);
-        toast.dismiss();
-      }, 4000);
-    }
-    return () => clearTimeout(timer);
-  }, [display]);
-
   return (
     <>
-      <Toaster position="bottom-right" />
-      {display !== null && <InviteDisplay userid={userId} socketId={socketId} setDisplay={setDisplay} map={map} />}
+      {invite && (
+        <InviteDisplay 
+          invite={invite} 
+          onClose={() => setInvite(null)} 
+        />
+      )}
     </>
   );
 };

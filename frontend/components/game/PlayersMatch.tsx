@@ -23,7 +23,7 @@ function LeftPlayer(){
 	else{
 		return (
 		<div className = 'flex flex-col iterms-center justify-center'>
-			<Image src={data.image} width={150} height={150} alt="avatar" className="rounded-full"/>
+			<Image src={data.avatar} width={150} height={150} alt="avatar" className="rounded-full"/>
 			<h1 className = 'pt-2 text-2xl font-bold'> {data.username} </h1>
 		</div>
 	)
@@ -67,7 +67,7 @@ function LoadingPlayer({setGame}: prop){
 				try {
 					const { data } = await axios.get(`/users/getId/${player}`);
 					setName(data.username);
-					setImage(data.image);
+					setImage(data.avatar);
 					clearInterval(interval);
 					setTimeout(() => {
 						setGame(true);

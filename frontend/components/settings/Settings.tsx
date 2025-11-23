@@ -44,7 +44,7 @@ const Settings = () => {
   else {
       return (
           <div className='my-8 flex flex-col items-center gap-8'>
-            <ChangeNameImage src={User.data.image} name={User.data.username} />
+            <ChangeNameImage src={User.data.avatar} name={User.data.username} />
             <div>
               <h3 className='my-6 text-xl font-bold text-blue' >two-factor authentication</h3>
               <p className='max-w-sm'>

@@ -79,7 +79,7 @@ const Right = () => {
         <div className="h-fit w-full rounded-xl  py-3 ">
           <Image
             className="h-[150px] w-[150px]  rounded-full mx-auto my-3 "
-            src={data.image}
+            src={data.avatar}
             width={1000}
             height={1000}
             alt=""

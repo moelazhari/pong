@@ -12,6 +12,7 @@ import {
   HttpStatus,
   BadRequestException,
   NotFoundException,
+  ParseIntPipe,
 } from '@nestjs/common';
 import { FriendshipService } from './friendship.service';
 import { JwtAccessGuard } from 'src/auth/guards/jwt-access.guard';
@@ -39,11 +40,9 @@ export class FriendshipController {
     };
   }
 
-
   @Get('friendrequests')
   async friendReq(@Req() req) {
     const requests = await this.friendshipService.friendReq(req.user.id);
-
     return requests;
   }
 
@@ -62,19 +61,19 @@ export class FriendshipController {
   }
 
   @Get('getFriends/:id')
-  async getFriends(@Req() req, @Param('id') id: number) {
+  async getFriends(@Param('id', ParseIntPipe) id: number) {
     const friends = await this.friendshipService.getFriends(id);
-    return friends;
+    return { friends };
   }
 
   @Get('status/:id')
-  async status(@Param('id') id: number, @Req() req) {
+  async status(@Param('id', ParseIntPipe) id: number, @Req() req) {
     return this.friendshipService.status(req.user.id, id);
   }
 
   @Get('search/:channelid/:query')
   async search(
-    @Param('channelid') channelId: number,
+    @Param('channelid', ParseIntPipe) channelId: number,
     @Param('query') query: string, 
     @Req() req
   ) {
@@ -84,8 +83,7 @@ export class FriendshipController {
 
   @Delete(':id')
   @HttpCode(HttpStatus.OK)
-  async remove(@Param('id') id: number, @Req() req) {
-
+  async remove(@Param('id', ParseIntPipe) id: number, @Req() req) {
     await this.friendshipService.remove(req.user.id, id);
     
     return { 
