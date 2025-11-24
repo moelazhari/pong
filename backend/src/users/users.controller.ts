@@ -59,7 +59,7 @@ export class UsersController {
   @Get('blocked/list')
   async getBlockedUsers(@Req() req) {
     const blockedUsers = await this.usersService.blockedUsers(req.user.id);
-    return { blockedUsers };
+    return blockedUsers;
   }
 
   // ========================================
@@ -116,12 +116,6 @@ export class UsersController {
     return user;
   }
 
-  @Get('stats/:userId')
-  async getUserStats(@Param('userId', ParseIntPipe) userId: number) {
-    const stats = await this.usersService.getUserStats(userId);
-    return stats;
-  }
-
   @Patch('me/profile')
   @HttpCode(HttpStatus.OK)
   async updateProfile(@Req() req, @Body() dto: UpdateProfileDTO) {
@@ -175,12 +169,18 @@ export class UsersController {
     return { message: 'User blocked successfully' };
   }
 
-  @Delete('block/:userId')
+  @Delete('unblock')
   @HttpCode(HttpStatus.OK)
   async unblockUser(
     @Req() req,
-    @Param('userId', ParseIntPipe) userId: number,
+    @Body('userId', ParseIntPipe) userId: number,
   ) {
+    if (req.user.id === userId) {
+      throw new BadRequestException('You cannot unblock yourself');
+    }
+
+    console.log(req.user.id, userId);
+
     await this.usersService.unblock(req.user.id, userId);
     return { message: 'User unblocked successfully' };
   }

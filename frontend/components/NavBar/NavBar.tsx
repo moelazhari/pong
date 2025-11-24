@@ -4,7 +4,7 @@ import Right from "./Right";
 
 const NavBar = () => {
   return (
-    <nav className="fixed flex justify-between items-center h-[56px] w-screen border-b border-blue z-30">
+    <nav className="fixed top-0 left-0 right-0 flex justify-between items-center h-16 w-full bg-gray-900/80 backdrop-blur-xl border-b border-white/10 shadow-lg z-50">
       <Left />
       <Mid />
       <Right />

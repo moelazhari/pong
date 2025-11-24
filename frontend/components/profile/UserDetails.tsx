@@ -1,127 +1,79 @@
 "use client";
-import { useEffect, useState, ReactNode } from "react";
-import { BarChart3, Award, History, User2 } from "lucide-react";
+import { useState } from "react";
+import { BarChart3, Award, Swords, Users } from "lucide-react";
 
 interface UserDetailsProps {
-  Stats: ReactNode;
-  Archievement: ReactNode;
-  Matches: ReactNode;
-  Friends: ReactNode;
+  Stats: React.ReactNode;
+  Archievement: React.ReactNode;
+  Matches: React.ReactNode;
+  Friends: React.ReactNode;
 }
 
-const UserDetails = (props: UserDetailsProps) => {
-  const [stats, setStats] = useState<boolean>(true);
-  const [achievements, setAchievements] = useState<boolean>(false);
-  const [matches, setMatches] = useState<boolean>(false);
-  const [friends, setFriends] = useState<boolean>(false);
+type TabType = "stats" | "achievements" | "matches" | "friends";
 
-  useEffect(() => {
-    const handleResize = () => {
-      if (window.innerWidth > 1020) {
-        setFriends(false);
-      }
-      if (window.innerWidth > 1280) {
-        setStats(true);
-        setAchievements(false);
-        setMatches(false);
-        setFriends(false);
-      }
-    };
+export default function UserDetails({ 
+  Stats, 
+  Archievement, 
+  Matches, 
+  Friends 
+}: UserDetailsProps) {
+  const [activeTab, setActiveTab] = useState<TabType>("stats");
 
-    window.addEventListener("resize", handleResize);
-
-    return () => {
-      window.removeEventListener("resize", handleResize);
-    };
-  }, []);
+  const tabs = [
+    { id: "stats" as TabType, label: "Stats", icon: BarChart3, gradient: "from-blue to-cyan-500" },
+    { id: "achievements" as TabType, label: "Achievements", icon: Award, gradient: "from-yellow-500 to-orange-500" },
+    { id: "matches" as TabType, label: "Matches", icon: Swords, gradient: "from-red to-pink-500" },
+    { id: "friends" as TabType, label: "Friends", icon: Users, gradient: "from-green-500 to-emerald-500" },
+  ];
 
   return (
-    <div className="flex-[0.5] grow flex flex-col sm:rounded-3xl sm:shadow-2xl bg-white bg-opacity-20 ackdrop-blur-lg drop-shadow-lg overflow-hidden">
-      <div className="flex justify-around xl:p-4 sm:rounded-t-3xl">
-        <button
-          aria-label="stats"
-          onClick={() => {
-            setStats(true);
-            setAchievements(false);
-            setMatches(false);
-            setFriends(false);
-          }}
-        >
-          <div
-            className={`h-[56px] w-fit flex justify-center items-center m-auto p-2 hover:opacity-70  hover:border-b border-blue  ${
-              stats ? "border-b" : ""
-            }`}
-          >
-            <BarChart3 size={28} color="#7ac7c4" strokeWidth={2} />
-            <h2 className="hidden lg:inline text-[28px] ml-4">Stats</h2>
-          </div>
-        </button>
-        <button
-          aria-label="achievements"
-          className="xl:hidden"
-          onClick={() => {
-            setStats(false);
-            setAchievements(true);
-            setMatches(false);
-            setFriends(false);
-          }}
-        >
-          <div
-            className={`h-[56px] w-fit flex justify-center items-center m-auto p-2 hover:opacity-70  hover:border-b border-blue  ${
-              achievements ? "border-b" : ""
-            }`}
-          >
-            <Award size={28} color="#7ac7c4" strokeWidth={2} />
-            <h2 className="hidden lg:inline text-[28px] ml-4">Achievements</h2>
-          </div>
-        </button>
-        <button
-          aria-label="matches"
-          className="xl:hidden"
-          onClick={() => {
-            setStats(false);
-            setAchievements(false);
-            setMatches(true);
-            setFriends(false);
-          }}
-        >
-          <div
-            className={`h-[56px] w-fit flex justify-center items-center m-auto p-2 hover:opacity-70  hover:border-b border-blue  ${
-              matches ? "border-b" : ""
-            }`}
-          >
-            <History size={28} color="#7ac7c4" strokeWidth={2} />
-            <h2 className="hidden lg:inline text-[28px] ml-4">Matches</h2>
-          </div>
-        </button>
-        <button
-          aria-label="friends"
-          className="lg:hidden"
-          onClick={() => {
-            setStats(false);
-            setAchievements(false);
-            setMatches(false);
-            setFriends(true);
-          }}
-        >
-          <div
-            className={`h-[56px] w-fit flex justify-center items-center m-auto p-2 hover:opacity-70  hover:border-b border-blue  ${
-              friends ? "border-b" : ""
-            }`}
-          >
-            <User2 size={28} color="#7ac7c4" strokeWidth={2} />
-            <h2 className="hidden lg:inline text-[28px] ml-4">Friends</h2>
-          </div>
-        </button>
+    <div className="flex flex-col min-h-[600px]">
+      {/* Tab Navigation */}
+      <div className="flex gap-2 p-3 bg-gradient-to-r from-white/10 to-white/5 border-b border-white/10">
+        {tabs.map((tab) => {
+          const Icon = tab.icon;
+          const isActive = activeTab === tab.id;
+          
+          return (
+            <button
+              key={tab.id}
+              onClick={() => setActiveTab(tab.id)}
+              className={`flex-1 relative overflow-hidden rounded-xl py-3 px-3 sm:px-4 transition-all duration-300 group ${
+                isActive
+                  ? `bg-gradient-to-r ${tab.gradient} shadow-lg transform scale-105`
+                  : "bg-white/5 hover:bg-white/10"
+              }`}
+            >
+              <div className="flex items-center justify-center gap-2 relative z-10">
+                <Icon 
+                  size={20} 
+                  className={`${isActive ? "text-white" : "text-gray-400 group-hover:text-white"} transition-colors`}
+                  strokeWidth={2.5}
+                />
+                <span className={`hidden sm:inline font-semibold text-sm ${
+                  isActive ? "text-white" : "text-gray-400 group-hover:text-white"
+                } transition-colors`}>
+                  {tab.label}
+                </span>
+              </div>
+              
+              {!isActive && (
+                <div className={`absolute inset-0 bg-gradient-to-r ${tab.gradient} opacity-0 group-hover:opacity-20 transition-opacity`} />
+              )}
+            </button>
+          );
+        })}
       </div>
-      <div className="h-full p-4 overflow-auto scrollbar sm:rounded-b-3xl">
-        {stats && props.Stats}
-        {achievements && props.Archievement}
-        {matches && props.Matches}
-        {friends && props.Friends}
+
+      {/* Content Area - FIXED: Now properly displays content */}
+      <div className="flex-1 overflow-auto">
+        <div className="h-full">
+          {activeTab === "stats" && Stats}
+          {activeTab === "achievements" && Archievement}
+          {activeTab === "matches" && Matches}
+          {activeTab === "friends" && Friends}
+        </div>
       </div>
     </div>
   );
-};
-
-export default UserDetails;
+}

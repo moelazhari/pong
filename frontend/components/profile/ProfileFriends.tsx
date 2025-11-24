@@ -1,5 +1,5 @@
 import FriendsList from "@/components/friends/FriendsList";
-import { User2 } from "lucide-react";
+import { Users } from "lucide-react";
 
 interface ProfileFriendsProps {
   userId: number;
@@ -8,12 +8,16 @@ interface ProfileFriendsProps {
 
 export default function ProfileFriends({ userId, isCurrentUser }: ProfileFriendsProps) {
   return (
-    <div className="h-full flex flex-col grow rounded-3xl shadow-2xl bg-white bg-opacity-20 backdrop-blur-lg drop-shadow-lg overflow-hidden">
-      {/* Header */}
-      <div className="flex-shrink-0 rounded-t-3xl py-4 bg-gradient-to-b from-black/10 to-transparent">
-        <div className="h-[56px] w-fit flex justify-center items-center m-auto px-4 border-b-2 border-blue">
-          <User2 size={28} color="#7ac7c4" strokeWidth={2} />
-          <h2 className="text-[28px] ml-4 font-semibold">Friends</h2>
+    <div className="h-full flex flex-col">
+      {/* Gradient Header */}
+      <div className="flex-shrink-0 bg-gradient-to-r from-blue/20 to-blue/5 border-b border-white/10">
+        <div className="flex items-center gap-3 px-6 py-5">
+          <div className="p-2 bg-blue/20 rounded-xl">
+            <Users size={24} color="#7ac7c4" strokeWidth={2} />
+          </div>
+          <h2 className="text-2xl font-bold bg-gradient-to-r from-white to-gray-300 bg-clip-text text-transparent">
+            Friends
+          </h2>
         </div>
       </div>
 

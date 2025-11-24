@@ -20,7 +20,7 @@ const Block = ({ id }: { id: number }) => {
 
   const block = useMutation({
     mutationFn: async (id: number) => {
-      const { data } = await axios.post(`/users/block`, { id: id });
+      const { data } = await axios.post(`/users/block`, { userId: id });
       return data;
     },
     onSuccess: () => {

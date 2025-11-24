@@ -10,15 +10,17 @@ import { useMutation } from "@tanstack/react-query";
 import { Client } from "@/providers/QueryProvider";
 
 const BlockedUser = ({ user }: { user: any }) => {
-  const unblock = useMutation({
-    mutationKey: ["unblock"],
-    mutationFn: async (id: number) => {
-      await axios.delete(`/users/unblock/${id}`);
-    },
-    onSuccess: () => {
-      Client.refetchQueries(["blockList"]);
-    },
-  });
+    const unblock = useMutation({
+      mutationKey: ["unblock"],
+      mutationFn: async (id: number) => {
+        await axios.delete(`/users/unblock`, {
+          data: { userId: id }
+        });
+      },
+      onSuccess: () => {
+        Client.refetchQueries(["blockList"]);
+      },
+    });
 
   return (
     <div
@@ -27,7 +29,7 @@ const BlockedUser = ({ user }: { user: any }) => {
       <div className="grow flex items-center gap-4">
         <Image
           className="w-[48px] h-[48px] rounded-full self-center"
-          src={user.image}
+          src={user.avatar}
           width={1000}
           height={1000}
           alt="user image"
@@ -45,7 +47,7 @@ const BlockList = () => {
   const { data, isLoading } = useQuery({
     queryKey: ["blockList"],
     queryFn: async () => {
-      const { data } = await axios.get("/users/blockedUsers");
+      const { data } = await axios.get("users/blocked/list");
       return data;
     },
   });

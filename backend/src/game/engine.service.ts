@@ -92,5 +92,5 @@ export class engineService {
 			this.usersGateway.updeteUser(loser.id);
 			this.usersGateway.updeteUser(winner.id);
 			}
-		}
 	}
+}
