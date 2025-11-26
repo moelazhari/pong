@@ -27,7 +27,7 @@ const Chat = () => {
           queryKey: ['channels'],
           queryFn: async () => {
             const channelsResponse = await axios.get('/channels');
-            const userDataResponse = await axios.get('/users/getUser/me');
+            const userDataResponse = await axios.get('/users/me');
             dispatch(setChannels(channelsResponse.data));
             dispatch(setuser(userDataResponse.data));
             setUser(userDataResponse.data);

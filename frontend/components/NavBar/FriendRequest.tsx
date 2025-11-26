@@ -1,30 +1,30 @@
-"use client";
-import { useState, useEffect } from "react";
-import Image from "next/image";
-import { useQuery, useMutation } from "@tanstack/react-query";
-import toast from "react-hot-toast";
-import axios from "@/lib/axios";
-import { Client } from "@/providers/QueryProvider";
-import useCloseOutSide from "@/hookes/useCloseOutSide";
-import { UserPlus2, Check, X } from "lucide-react";
-import socket from "../socketG";
+"use client"
+import { useState, useEffect } from "react"
+import Image from "next/image"
+import { useQuery, useMutation } from "@tanstack/react-query"
+import toast from "react-hot-toast"
+import axios from "@/lib/axios"
+import { Client } from "@/providers/QueryProvider"
+import useCloseOutSide from "@/hookes/useCloseOutSide"
+import { UserPlus2, Check, X } from "lucide-react"
+import socket from "@/components/socketG"
 
-const FriendRequestCard = ({ 
-  user, 
-  onAccept, 
-  onDecline, 
-  isLoading 
-}: { 
-  user: any; 
-  onAccept: () => void; 
-  onDecline: () => void; 
-  isLoading: boolean;
+const FriendRequestCard = ({
+  user,
+  onAccept,
+  onDecline,
+  isLoading,
+}: {
+  user: any
+  onAccept: () => void
+  onDecline: () => void
+  isLoading: boolean
 }) => (
   <div className="flex items-center justify-between gap-3 p-3 rounded-xl bg-white/5 hover:bg-white/10 transition-all">
     <div className="flex items-center gap-3 flex-1 min-w-0">
       <Image
         className="w-12 h-12 rounded-full object-cover ring-2 ring-white/20"
-        src={user.avatar}
+        src={user.avatar || "/placeholder.svg"}
         width={48}
         height={48}
         alt={user.username}
@@ -53,47 +53,47 @@ const FriendRequestCard = ({
       </button>
     </div>
   </div>
-);
+)
 
-const FriendRequestDropdown = ({ 
-  users, 
-  setIsOpen 
-}: { 
-  users: any[]; 
-  setIsOpen: (v: boolean) => void;
+const FriendRequestDropdown = ({
+  users,
+  setIsOpen,
+}: {
+  users: any[]
+  setIsOpen: (v: boolean) => void
 }) => {
-  const { divref } = useCloseOutSide({ setIsOpen });
+  const { divref } = useCloseOutSide({ setIsOpen })
 
   const Accept = useMutation({
     mutationFn: async (senderId: number) => {
-      const { data } = await axios.patch(`/friendship/acceptRequest`, { sender: senderId });
-      return data;
+      const { data } = await axios.patch(`/friendship/acceptRequest`, { sender: senderId })
+      return data
     },
     onSuccess: (data, senderId) => {
-      const sender = users.find(u => u.id === senderId);
-      toast.success(`You're now friends with ${sender?.username || 'this user'}!`);
-      Client.refetchQueries(["friendrequests"]);
-      Client.refetchQueries(["friends"]);
+      const sender = users.find((u) => u.id === senderId)
+      toast.success(`You're now friends with ${sender?.username || "this user"}!`)
+      Client.refetchQueries(["friendrequests"])
+      Client.refetchQueries(["friends"])
     },
     onError: (error: any) => {
-      toast.error(error.response?.data?.message || "Failed to accept request");
+      toast.error(error.response?.data?.message || "Failed to accept request")
     },
-  });
+  })
 
   const Decline = useMutation({
     mutationFn: async (senderId: number) => {
-      await axios.delete(`/friendship/${senderId}`);
+      await axios.delete(`/friendship/${senderId}`)
     },
     onSuccess: () => {
-      toast.success("Friend request declined");
-      Client.refetchQueries(["friendrequests"]);
+      toast.success("Friend request declined")
+      Client.refetchQueries(["friendrequests"])
     },
     onError: (error: any) => {
-      toast.error(error.response?.data?.message || "Failed to decline request");
+      toast.error(error.response?.data?.message || "Failed to decline request")
     },
-  });
+  })
 
-  const isLoading = Accept.isPending || Decline.isPending;
+  const isLoading = Accept.isPending || Decline.isPending
 
   return (
     <div
@@ -124,37 +124,37 @@ const FriendRequestDropdown = ({
         )}
       </div>
     </div>
-  );
-};
+  )
+}
 
 const FriendRequest = () => {
-  const [notif, setNotif] = useState(false);
-  const [isOpen, setIsOpen] = useState(false);
+  const [notif, setNotif] = useState(false)
+  const [isOpen, setIsOpen] = useState(false)
 
   const { data } = useQuery({
     queryKey: ["friendrequests"],
     queryFn: async () => {
-      const { data } = await axios.get("/friendship/friendrequests");
-      if (data.length > 0) setNotif(true);
-      return data;
+      const { data } = await axios.get("/friendship/friendrequests")
+      if (data.length > 0) setNotif(true)
+      return data
     },
-  });
+  })
 
   useEffect(() => {
     const handleFriendRequest = () => {
-      setNotif(true);
-      Client.refetchQueries(["friendrequests"]);
-      toast("You have a new friend request!", { icon: "👋" });
-    };
+      setNotif(true)
+      Client.refetchQueries(["friendrequests"])
+      toast("You have a new friend request!", { icon: "👋" })
+    }
 
-    socket.on("friendRequest", handleFriendRequest);
-    return () => socket.off("friendRequest", handleFriendRequest);
-  }, []);
+    socket.on("friendRequest", handleFriendRequest)
+    return () => socket.off("friendRequest", handleFriendRequest)
+  }, [])
 
   const handleClick = () => {
-    setNotif(false);
-    setIsOpen(!isOpen);
-  };
+    setNotif(false)
+    setIsOpen(!isOpen)
+  }
 
   return (
     <div className="relative">
@@ -170,7 +170,7 @@ const FriendRequest = () => {
       </button>
       {isOpen && <FriendRequestDropdown users={data || []} setIsOpen={setIsOpen} />}
     </div>
-  );
-};
+  )
+}
 
 export default FriendRequest;

@@ -15,7 +15,7 @@ function LeftPlayer(){
 	const {data, isLoading} = useQuery({
 		queryKey: ['user', 'me'],
 		queryFn: async ()=> {
-		  const {data} = await axios.get('/users/getUser/me')
+		  const {data} = await axios.get('/users/me')
 		  return data;
 		}
 	  });
@@ -65,7 +65,7 @@ function LoadingPlayer({setGame}: prop){
 	
 			socket.on('match-found', async (player: string) => {
 				try {
-					const { data } = await axios.get(`/users/getId/${player}`);
+					const { data } = await axios.get(`/users/${player}`);
 					setName(data.username);
 					setImage(data.avatar);
 					clearInterval(interval);

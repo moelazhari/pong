@@ -83,7 +83,7 @@ export default function FriendsList({ userId, isCurrentUser }: FriendsListProps)
   }
 
   return (
-    <div className="h-full flex flex-col gap-2 overflow-auto scrollbar p-3">
+    <div className="h-full flex flex-col gap-2  scrollbar p-3">
       {friends.map((friend: any) => (
         <FriendCard
           key={friend.id}

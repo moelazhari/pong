@@ -20,7 +20,7 @@ function MePlayer({ score, name }: pScore) {
     const { data, isLoading } = useQuery({
       queryKey: ["scoreleft"],
       queryFn: async () => {
-        const { data } = await axios.get(`/users/getUser/me`);
+        const { data } = await axios.get(`/users/me`);
         return data;
       },
     });
@@ -48,9 +48,12 @@ function MePlayer({ score, name }: pScore) {
     const { data, isLoading } = useQuery({
       queryKey: ["scoreleft"],
       queryFn: async () => {
-        const { data } = await axios.get(`/users/getId/${name}`);
+        const { data } = await axios.get('/users/' + name);
         return data;
       },
+      onerror: (error: any) => {
+        console.log(error);
+      } 
     });
     if (isLoading) return <div>Loading...</div>;
     else {
@@ -98,7 +101,7 @@ function OtherPlayer({ score, name }: pScore) {
     const { data, isLoading } = useQuery({
       queryKey: ["scoreright"],
       queryFn: async () => {
-        const { data } = await axios.get(`/users/getId/${name}`);
+        const { data } = await axios.get(`/users/${name}`);
         return data;
       },
     });

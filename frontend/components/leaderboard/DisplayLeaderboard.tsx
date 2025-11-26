@@ -85,7 +85,7 @@ const DisplayLeaderboard = () => {
   const currentUser = useQuery({
     queryKey: ["user", "me"],
     queryFn: async () => {
-      const { data } = await axios.get("/users/getUser/me");
+      const { data } = await axios.get("/users/me");
       return data;
     },
   });

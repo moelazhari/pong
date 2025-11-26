@@ -34,7 +34,7 @@ const Page =  ({ params }: { params: {id:any} }) => {
           return null;
         }
         const channel = await axios.get(`/channels/${params.id}`);
-        const user = await axios.get(`/users/getUser/me`);
+        const user = await axios.get(`/users/me`);
         
         if(!channel.data )
         {

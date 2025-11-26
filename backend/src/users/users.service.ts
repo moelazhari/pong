@@ -41,7 +41,6 @@ export class UsersService {
         'email',
         'username',
         'avatar',
-        'baner',
         'level',
         'XP',
         'wins',

@@ -105,9 +105,9 @@ export class UsersController {
       throw new NotFoundException('User not found');
     }
 
-    if (user.id === req.user.id) {
-      throw new BadRequestException('Use /users/me to get your own profile');
-    }
+    // if (user.id === req.user.id) {
+    //   throw new BadRequestException('Use /users/me to get your own profile');
+    // }
 
     const blockStatus = await this.usersService.isBlocked(req.user.id, user.id);
     if (blockStatus.isBlock) {

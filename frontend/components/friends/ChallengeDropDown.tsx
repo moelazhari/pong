@@ -1,13 +1,13 @@
-"use client";
-import Image from "next/image";
-import { X } from "lucide-react";
-import toast from "react-hot-toast";
-import socket from "@/components/socketG";
-import useCloseOutSide from "@/hookes/useCloseOutSide";
+"use client"
+import Image from "next/image"
+import { X } from "lucide-react"
+import toast from "react-hot-toast"
+import socket from "@/components/socketG"
+import useCloseOutSide from "@/hookes/useCloseOutSide"
 
 interface ChallengeDropdownProps {
-  userId: number;
-  onClose: () => void;
+  userId: number
+  onClose: () => void
 }
 
 const GAME_MAPS = [
@@ -26,22 +26,22 @@ const GAME_MAPS = [
     name: "Ping Pong",
     image: "/game/default-map-select.webp",
   },
-];
+]
 
 export default function ChallengeDropdown({ userId, onClose }: ChallengeDropdownProps) {
-  const { divref } = useCloseOutSide({ setIsOpen: onClose });
+  const { divref } = useCloseOutSide({ setIsOpen: onClose })
 
   const handleSelectMap = (mapId: string) => {
-    localStorage.setItem("map", mapId);
-    
+    localStorage.setItem("map", mapId)
+
     socket.emit("invite-friend", {
       receiverId: userId,
       map: mapId,
-    });
-    
-    toast.success("Challenge sent!");
-    onClose();
-  };
+    })
+
+    toast.success("Challenge sent!")
+    onClose()
+  }
 
   return (
     <div
@@ -50,11 +50,7 @@ export default function ChallengeDropdown({ userId, onClose }: ChallengeDropdown
     >
       <div className="flex items-center justify-between">
         <h3 className="text-blue font-semibold">Choose Map</h3>
-        <button
-          onClick={onClose}
-          className="hover:opacity-70 transition-opacity"
-          aria-label="Close"
-        >
+        <button onClick={onClose} className="hover:opacity-70 transition-opacity" aria-label="Close">
           <X size={20} className="text-white" />
         </button>
       </div>
@@ -69,7 +65,7 @@ export default function ChallengeDropdown({ userId, onClose }: ChallengeDropdown
             <div className="rounded-full h-10 w-10 overflow-hidden flex-shrink-0">
               <Image
                 className="h-full w-full object-cover"
-                src={map.image}
+                src={map.image || "/placeholder.svg"}
                 width={40}
                 height={40}
                 alt={map.name}
@@ -80,5 +76,5 @@ export default function ChallengeDropdown({ userId, onClose }: ChallengeDropdown
         ))}
       </div>
     </div>
-  );
+  )
 }

@@ -1,26 +1,28 @@
-"use client"
+"use client";
 
-import { useForm } from "react-hook-form"
-import { zodResolver } from "@hookform/resolvers/zod"
-import { useMutation } from "@tanstack/react-query"
-import { useRouter } from "next/navigation"
-import toast from 'react-hot-toast'
-import { Loader2, AlertCircle, CheckCircle2 } from "lucide-react"
-import axios from "@/lib/axios"
-import CloudinaryAvatarField from "@/components/complete-profile/CloudinaryAvatarField"
-import { completeProfileSchema } from "@/models/user"
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useMutation } from "@tanstack/react-query";
+import { useRouter } from "next/navigation";
+import toast from "react-hot-toast";
+import { Loader2, User, ArrowRight, Check, AlertCircle } from "lucide-react";
+import axios from "@/lib/axios";
+import { z } from "zod";
+import AvatarUploader from "@/components/ui/AvatarUploader"; 
+import { completeProfileSchema } from "@/models/user";
 
-type CompleteProfileFormData = z.infer<typeof completeProfileSchema>
+type CompleteProfileFormData = z.infer<typeof completeProfileSchema>;
 
 const UpdateForm = () => {
-  const router = useRouter()
+  const router = useRouter();
 
   const {
     register,
     handleSubmit,
-    control,
-    formState: { errors, isSubmitting, isValid },
+    setValue,
+    watch,
     setError,
+    formState: { errors, isSubmitting, isValid },
   } = useForm<CompleteProfileFormData>({
     resolver: zodResolver(completeProfileSchema),
     mode: "onChange",
@@ -28,116 +30,139 @@ const UpdateForm = () => {
       username: "",
       avatar: "/img/a.jpeg",
     },
-  })
+  });
+
+  const currentAvatar = watch("avatar");
 
   const updateUser = useMutation({
     mutationFn: async (userData: CompleteProfileFormData) => {
-      const {data} = await axios.patch("users/me/profile", userData)
-      console.log(data);
-      return data
+      const { data } = await axios.patch("users/me/profile", userData);
+      return data;
     },
     onSuccess: () => {
-      toast.success("Profile updated successfully!")
-      setTimeout(() => {
-        router.push("/profile")
-      }, 1000)
+      toast.success("Welcome to the game!");
+      setTimeout(() => router.push("/profile"), 800);
     },
     onError: (error: any) => {
       if (error.response?.status === 409) {
-        setError("username", { 
-          message: "Username already taken. Please choose another." 
-        })
-        toast.error("Username is already taken")
-      } else if (error.response?.status === 400) {
-        const errorMsg = error.response.data?.message || "Invalid data provided"
-        toast.error(errorMsg)
-        setError("root", { message: errorMsg })
+        setError("username", {
+          message: "Username already taken",
+        });
       } else {
-        toast.error("Failed to update profile. Please try again.")
-        setError("root", { 
-          message: "Failed to update profile. Please try again." 
-        })
+        toast.error("Connection failed. Try again.");
       }
     },
-  })
+  });
 
- const onSubmit = async (data: CompleteProfileFormData) => {
-    // Show loading toast
-    const toastId = toast.loading("Updating your profile...")
-    
-    try {
-      await updateUser.mutateAsync(data)
-      toast.dismiss(toastId)
-    } catch (error) {
-      toast.dismiss(toastId)
-    }
-  }
-  const isLoading = isSubmitting || updateUser.isPending
+  const onSubmit = async (data: CompleteProfileFormData) => {
+    await updateUser.mutateAsync(data);
+  };
+
+  const handleAvatarUpload = (url: string) => {
+    setValue("avatar", url, { shouldValidate: true, shouldDirty: true });
+  };
+
+  const isLoading = isSubmitting || updateUser.isPending;
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col max-w-md w-full">
+    <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col items-center w-full">
+      
+      {/* 1. Avatar Section */}
+      <div className="mb-8 flex flex-col items-center gap-4">
+        <AvatarUploader
+          currentAvatar={currentAvatar}
+          isMe={true}
+          onUpload={handleAvatarUpload}
+          isUploadingExternal={isLoading} 
+        />
+        <span className="text-xs text-blue font-bold tracking-widest uppercase bg-blue/10 px-3 py-1 rounded-full border border-blue/20">
+          Upload Photo
+        </span>
+      </div>
 
-      {/* Cloudinary Avatar Upload */}
-      <CloudinaryAvatarField 
-        name="avatar"
-        control={control}
-        defaultPreview="/img/a.jpeg"
-      />
+      {/* 2. Username Input */}
+      <div className="w-full mb-8">
+        <label 
+          htmlFor="username" 
+          className="block text-xs font-bold text-gray-400 mb-2 ml-1 uppercase tracking-wider"
+        >
+          Username
+        </label>
+        
+        <div className="relative group">
+          <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+            <User className={`w-5 h-5 transition-colors ${
+              errors.username ? "text-red" : "text-gray-500 group-focus-within:text-blue"
+            }`} />
+          </div>
+          
+          <input
+            id="username"
+            type="text"
+            placeholder="Choose your alias"
+            disabled={isLoading}
+            autoComplete="off"
+            className={`
+              w-full pl-11 pr-4 py-4 rounded-xl text-white placeholder-gray-600 outline-none transition-all border
+              ${errors.username 
+                ? "bg-red/5 border-red/50 focus:ring-1 focus:ring-red/50" 
+                : "bg-black/20 border-white/10 focus:border-blue/50 focus:bg-black/40 focus:ring-1 focus:ring-blue/50"
+              }
+              disabled:opacity-50 disabled:cursor-not-allowed
+            `}
+            {...register("username")}
+          />
+        </div>
 
-      {/* Username Input */}
-      <label htmlFor="username" className="text-xl mb-2 mt-6">
-        Enter Your Username
-      </label>
-      <input
-        id="username"
-        type="text"
-        placeholder="Username"
-        disabled={isLoading}
-        className={`text-black w-full px-3 py-2 border rounded mb-1 focus:outline-none focus:ring-2 transition-colors ${
-          errors.username 
-            ? "border-red-500 focus:ring-red-500" 
-            : "border-gray-300 focus:ring-blue-500"
-        } disabled:bg-gray-100 disabled:cursor-not-allowed`}
-        aria-invalid={errors.username ? "true" : "false"}
-        aria-describedby={errors.username ? "username-error" : undefined}
-        {...register("username")}
-      />
-      {errors.username && (
-        <p id="username-error" className="text-red text-xs mb-4 flex items-center gap-1">
-          <AlertCircle size={12} />
-          {errors.username.message}
-        </p>
-      )}
+        {/* Error / Validation Message */}
+        <div className="h-6 mt-2 pl-1">
+          {errors.username ? (
+            <span className="text-red text-xs flex items-center gap-1 font-bold animate-in fade-in slide-in-from-top-1">
+              <AlertCircle size={12} />
+              {errors.username.message}
+            </span>
+          ) : (
+             <span className="text-gray-500 text-xs">
+               Unique identifier for the game.
+             </span>
+          )}
+        </div>
+      </div>
 
-      {/* Submit Button */}
+      {/* 3. Action Button */}
       <button
         type="submit"
         disabled={isLoading || !isValid}
-        className="mt-12 h-12 rounded-2xl bg-blue text-white px-12 hover:bg-blue-700 disabled:bg-blue/40 disabled:cursor-crosshair transition-all duration-200 flex items-center justify-center gap-2 font-medium"
+        className={`
+          w-full py-4 rounded-xl font-bold text-lg flex items-center justify-center gap-2 transition-all duration-300
+          ${isLoading 
+            ? "bg-white/5 text-gray-400 cursor-wait border border-white/5"
+            : !isValid 
+              ? "bg-gray-800 text-gray-600 cursor-not-allowed"
+              : "bg-blue hover:bg-blue/80 text-white shadow-lg shadow-blue/20 hover:shadow-blue/40 hover:-translate-y-1"
+          }
+        `}
       >
         {isLoading ? (
           <>
-            <Loader2 className="animate-spin" size={18} />
-            Saving...
+            <Loader2 className="animate-spin" size={20} />
+            <span>Processing...</span>
           </>
         ) : updateUser.isSuccess ? (
           <>
-            <CheckCircle2 size={18} />
-            Saved!
+            <Check size={20} />
+            <span>Success!</span>
           </>
         ) : (
-          "Save Profile"
+          <>
+            <span>Enter Arena</span>
+            <ArrowRight size={20} />
+          </>
         )}
       </button>
 
-      {/* Helper text */}
-      <p className="text-center text-sm mt-4">
-        {isLoading 
-          ? "Please wait while we update your profile..."
-          : "All fields are required to continue"}
-      </p>
     </form>
-  )
-}
+  );
+};
 
 export default UpdateForm;

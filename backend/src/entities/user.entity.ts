@@ -38,9 +38,6 @@ export class User {
   @Column({ nullable: true })
   avatar: string;
 
-  @Column({ nullable: true })
-  baner: string;
-
   @Column({
     type: 'enum',
     enum: Status,
@@ -48,7 +45,7 @@ export class User {
   })
   status: Status;
 
-  @Column({ default: 0 })
+  @Column({ type: 'float', default: 0 })
   level: number;
 
   @Column({ default: 0 })
@@ -190,11 +187,3 @@ export class Friendship {
     @Column( )
     status: Fstatus;
 }
-
-function BeforeInsert(): (target: User, propertyKey: "hashPassword", descriptor: TypedPropertyDescriptor<() => Promise<void>>) => void | TypedPropertyDescriptor<() => Promise<void>> {
-    throw new Error('Function not implemented.');
-}
-function BeforeUpdate(): (target: User, propertyKey: "hashPasswordOnUpdate", descriptor: TypedPropertyDescriptor<() => Promise<void>>) => void | TypedPropertyDescriptor<() => Promise<void>> {
-    throw new Error('Function not implemented.');
-}
-
