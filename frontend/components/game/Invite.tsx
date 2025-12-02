@@ -5,6 +5,7 @@ import toast from "react-hot-toast";
 import socket from "@/components/socketG";
 import axios from "@/lib/axios";
 import Image from "next/image";
+import { Gamepad2 } from "lucide-react";
 
 interface InviteData {
   senderId: number;
@@ -20,10 +21,9 @@ interface InviteDisplayProps {
 }
 
 const InviteDisplay = ({ invite, onClose }: InviteDisplayProps) => {
-  const [timeLeft, setTimeLeft] = useState(10); // 10 seconds
+  const [timeLeft, setTimeLeft] = useState(1500);
   const router = useRouter();
 
-  // Countdown timer
   useEffect(() => {
     if (timeLeft <= 0) {
       handleDecline();
@@ -31,7 +31,7 @@ const InviteDisplay = ({ invite, onClose }: InviteDisplayProps) => {
     }
 
     const timer = setInterval(() => {
-      setTimeLeft((prev) => prev - 0.01);
+      setTimeLeft((prev) => prev - 1);
     }, 10);
 
     return () => clearInterval(timer);
@@ -50,48 +50,79 @@ const InviteDisplay = ({ invite, onClose }: InviteDisplayProps) => {
   };
 
   const handleDecline = () => {
+    socket.emit("decline-invitation", { 
+        senderUserId: invite.senderId,
+        senderSocketId: invite.senderSocketId 
+    });
     toast("You declined the game invitation", { icon: "👎" });
     onClose();
   };
+  
+  const getMapName = (map: string) => {
+    switch (map) {
+      case 'default':
+        return 'Classic Pong';
+      case 'football-mode':
+        return 'Football Field';
+      case 'cosmic':
+        return 'Cosmic Arena';
+      default:
+        return 'Unknown Map';
+    }
+  };
+  
+  const mapName = getMapName(invite.map);
+  const progressPercent = (timeLeft / 1500) * 100;
 
   return (
-    <div className="fixed right-4 bottom-4 z-50 animate-slide-in">
-      <div className="flex mt-1 justify-between bg-white/20 backdrop-blur-lg px-4 py-2 rounded-xl gap-2 sm:gap-8 shadow-lg border border-white/30">
-        <div className="flex items-center gap-4">
+    <div className="fixed right-4 bottom-4 z-50 w-full max-w-sm animate-slide-in">
+      <div className="bg-gray-900/70 backdrop-blur-xl border border-blue-400/50 shadow-2xl shadow-blue-900/60 rounded-xl p-4 text-white transition-all duration-300">
+        
+        <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center gap-3">
+                <Gamepad2 size={24} className="text-blue-400 animate-pulse" />
+                <h3 className="text-xl font-bold text-white">Game Invite</h3>
+            </div>
+            <span className={`text-sm font-mono transition-colors duration-500 ${timeLeft < 500 ? 'text-red-400 animate-wiggle' : 'text-gray-300'}`}>
+              {Math.ceil(timeLeft / 100)}s left
+            </span>
+        </div>
+
+        <div className="flex items-center gap-4 mb-4">
           <Image 
-            className="w-12 h-12 rounded-full object-cover" 
-            src={invite.senderAvatar} 
-            width={48}
-            height={48}
+            className="w-16 h-16 rounded-full object-cover ring-2 ring-blue-500 shadow-md" 
+            src={invite.senderAvatar || "https://placehold.co/64x64/1e293b/ffffff?text=U"}
+            width={64}
+            height={64}
             alt={`${invite.senderUsername}'s avatar`}
           />
           <div className="text-left">
-            <h3 className="text-sm sm:text-lg font-semibold">{invite.senderUsername}</h3>
-            <p className="text-xs sm:text-sm text-gray-300">
-              wants to play {invite.map} with you
+            <p className="text-base text-gray-300">
+              <span className="font-extrabold text-blue-300">{invite.senderUsername}</span> invites you to play on the <span className="font-bold text-yellow-400">{mapName}</span> map!
             </p>
           </div>
         </div>
-        <div className="flex items-center gap-2 text-xs sm:gap-4 sm:text-base">
+        
+        <div className="flex gap-3 mt-4">
           <button 
-            className="bg-red hover:bg-red-600 rounded-xl px-3 py-1.5 sm:px-4 sm:py-2 transition-colors" 
+            className="flex-1 bg-red-600 hover:bg-red-700 rounded-lg px-4 py-2 text-base font-semibold transition-all duration-200 shadow-lg shadow-red-600/30 ring-2 ring-red-500/50 hover:ring-red-500 active:scale-[0.98]" 
             onClick={handleDecline}
           >
             Decline
           </button>
           <button 
-            className="bg-green-500 hover:bg-green-600 rounded-xl px-3 py-1.5 sm:px-4 sm:py-2 transition-colors" 
+            className="flex-1 bg-emerald-500 hover:bg-emerald-600 rounded-lg px-4 py-2 text-base font-semibold transition-all duration-200 shadow-lg shadow-emerald-500/30 ring-2 ring-emerald-400/50 hover:ring-emerald-400 active:scale-[0.98]" 
             onClick={handleAccept}
           >
-            Accept
+            Accept & Join
           </button>
         </div>
       </div>
-      {/* Progress bar */}
-      <div className="relative h-1.5 bg-gray-700 rounded-full mt-2 overflow-hidden">
+      
+      <div className="relative h-2 bg-gray-700 rounded-full mt-2 overflow-hidden shadow-inner">
         <div
-          className="absolute bg-green-500 h-full rounded-full transition-all duration-100"
-          style={{ width: `${(timeLeft / 10) * 100}%` }}
+          className="absolute bg-green-400 h-full rounded-full transition-all duration-100 ease-linear"
+          style={{ width: `${progressPercent}%` }}
         />
       </div>
     </div>
@@ -103,42 +134,38 @@ const Invite = () => {
   const router = useRouter();
 
   useEffect(() => {
-    // Listen for successful game match
+    socket.off("play-a-friend");
     socket.on("play-a-friend", () => {
-      console.log('✅ play-a-friend event received');
+      console.log('✅ play-a-friend event received. Starting game...');
       toast.success("Game starting!");
+      setInvite(null);
       router.push("/game/match");
     });
 
-    // Listen for game invitations
+    socket.off("game-invitation");
     socket.on("game-invitation", async (data: { 
       senderId: number; 
       senderSocketId: string;
       map: string;
     }) => {
       console.log('=== INVITATION RECEIVED ===');
-      console.log('Data:', data);
 
       try {
-        // Fetch sender's full user data
-        console.log('Fetching user data for ID:', data.senderId);
         const response = await axios.get(`/users/${data.senderId}`);
-        console.log('User data received:', response.data);
         const sender = response.data;
 
         const inviteData: InviteData = {
           senderId: data.senderId,
           senderSocketId: data.senderSocketId,
-          senderUsername: sender.username,
+          senderUsername: sender.username || `User ${data.senderId}`,
           senderAvatar: sender.avatar,
           map: data.map,
         };
 
-        console.log('Setting invite:', inviteData);
         setInvite(inviteData);
-        toast(`${sender.username} invited you to play!`, {
+        toast(`${inviteData.senderUsername} invited you to play!`, {
           icon: "🎮",
-          duration: 10000,
+          duration: 15000,
         });
       } catch (error) {
         console.error("Failed to fetch sender data:", error);
@@ -146,7 +173,7 @@ const Invite = () => {
       }
     });
 
-    // Listen for errors
+    socket.off("error");
     socket.on("error", (error: { message: string }) => {
       console.error('Socket error:', error);
       toast.error(error.message);
@@ -163,6 +190,7 @@ const Invite = () => {
     <>
       {invite && (
         <InviteDisplay 
+          key={invite.senderId}
           invite={invite} 
           onClose={() => setInvite(null)} 
         />

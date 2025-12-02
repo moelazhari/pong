@@ -20,81 +20,104 @@ export default function Won({ setWon, setLost, me, other }: prop) {
   const [event, setEvent] = useState<string>("retry-game");
   const [senderName, setSenderName] = useState<string>(me);
   const [senderSocketId, setSenderSocketId] = useState<string>("");
-  const [timeLeft, setTimeLeft] = useState<number>(10);
-  const [retry, setRetry] = useState<string>("Retry");
+  const [timeLeft, setTimeLeft] = useState<number>(30); // Increased time for online interaction
+  const [retry, setRetry] = useState<string>("Offer Retry");
 
   useEffect(() => {
     const timer = setInterval(() => {
-      setTimeLeft((prevTime) => prevTime - 1);
+      setTimeLeft((prevTime) => {
+        if (prevTime <= 1) {
+            clearInterval(timer);
+            // Auto-leave only if no challenge is pending/accepted
+            if (event !== "accept-retry" && retry !== "Challenge Sent...") {
+                router.push("/game");
+            }
+            return 0;
+        }
+        return prevTime - 1;
+      });
     }, 1000);
-
-    if (timeLeft === 0) {
-      router.push("/game");
-    }
 
     return () => {
       clearInterval(timer);
     };
-  }, [timeLeft]);
+  }, [router, event, retry]);
 
+  // Use off before on to prevent double-listening
+  socket.off("refresh-page");
   socket.on("refresh-page", () => {
     setWon("");
     setLost("");
   });
 
+  socket.off("retry-game");
   socket.on("retry-game", (data: any) => {
     setSenderName(data.sender);
     setSenderSocketId(data.senderSocketId);
     setEvent("accept-retry");
-    setRetry("Click to retry");
+    setRetry("Opponent Wants Retry (Accept?)"); // Different text for winner receiving retry
   });
 
   const { data, isLoading } = useQuery({
-    queryKey: ["user", "me"],
+    queryKey: ["user", "me_online_won"],
     queryFn: async () => {
       const { data } = await axios.get("/users/me");
       return data;
     },
   });
-  if (isLoading) return <div>Loading...</div>;
-  else {
-    return (
-      <main className="h-full w-full grid place-content-center pt-14">
-        <div className="flex flex-col items-center gap-8 sm:px-16 sm:py-24 sm:bg-white sm:bg-opacity-20 sm:ackdrop-blur-lg sm:drop-shadow-lg sm:rounded-3xl">
-          <h1 className="text-6xl font-bold text-[#4bff60f5] ">You Won</h1>
-          <div className="w-[200px] h-[200px] sm:w-[400px] sm:h-[400px] border-black rounded-full overflow-hidden ">
-            <Image
-              width={400}
-              height={0}
-              alt="#"
-              src={data.avatar}
-              className="h-full w-full l"
-            />
-          </div>
-          <div className="flex gap-10 ">
-            <button
-              className="font-bold text-3xl bg-red py-2 px-8 rounded-[10px] hover:bg-[#FBACB3]"
-              onClick={() => {
-                socket.emit(event, {
-                  senderUsername: senderName,
-                  reciever: other,
-                  senderSocketId: senderSocketId,
-                });
-              }}
-            >
-              {retry}
-            </button>
-            <button
-              className="font-bold text-3xl bg-red py-2 px-8 rounded-[10px] hover:bg-[#FBACB3]"
-              onClick={() => {
-                router.push("/game");
-              }}
-            >
-              Leave {timeLeft}
-            </button>
-          </div>
+  
+  if (isLoading) return <div className="grid place-content-center h-full w-full text-white text-3xl bg-gray-900">Loading...</div>;
+
+  return (
+    <main className="h-full w-full grid place-content-center p-4 sm:p-0 bg-gray-900/90">
+      <div className='flex flex-col items-center gap-6 sm:gap-10 p-6 sm:px-16 sm:py-16 bg-gray-800/80 backdrop-blur-lg shadow-[0_0_50px_rgba(75,255,96,0.5)] rounded-3xl border-4 border-[#4bff60f5]'>
+        
+        <h1 className='text-7xl sm:text-8xl font-black text-[#4bff60f5] drop-shadow-lg animate-pulse'>
+          VICTORY!
+        </h1>
+        
+        <p className="text-xl text-gray-300">Congratulations, you dominated the match!</p>
+        
+        <div className='w-48 h-48 sm:w-64 sm:h-64 rounded-full overflow-hidden border-8 border-gray-600 shadow-2xl'>
+          <Image 
+            width={400} 
+            height={400} 
+            alt="Your Avatar" 
+            src={data.avatar} 
+            className="h-full w-full object-cover"
+          />
         </div>
-      </main>
-    );
-  }
+
+        <div className="flex flex-col sm:flex-row gap-4 sm:gap-10 w-full justify-center">
+          
+          <button
+            className="font-extrabold text-xl sm:text-2xl bg-[#4bff60f5] text-gray-900 py-3 px-8 rounded-full shadow-lg transition-all duration-300 hover:bg-[#34c244] hover:shadow-2xl hover:scale-105 active:scale-95 disabled:opacity-50"
+            onClick={() => {
+              if (event === "retry-game") {
+                 setRetry("Challenge Sent...");
+              }
+              socket.emit(event, {
+                senderUsername: senderName,
+                reciever: other,
+                senderSocketId: socket.id, // Use the actual socket ID
+              });
+            }}
+            disabled={event === "retry-game" && retry === "Challenge Sent..."}
+          >
+            {retry}
+          </button>
+          
+          <button
+            className="font-extrabold text-xl sm:text-2xl bg-gray-600 text-white py-3 px-8 rounded-full shadow-lg transition-all duration-300 hover:bg-gray-700 hover:shadow-2xl hover:scale-105 active:scale-95"
+            onClick={() => {
+              router.push("/game");
+            }}
+            disabled={timeLeft <= 0 && event !== "accept-retry"}
+          >
+            Leave ({timeLeft}s)
+          </button>
+        </div>
+      </div>
+    </main>
+  );
 }

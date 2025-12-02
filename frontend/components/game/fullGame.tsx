@@ -24,20 +24,25 @@ interface PlayerState {
 // Helper hook for handling responsive scaling
 const useGameScale = () => {
   const [scale, setScale] = useState({ sx: 1, sy: 1 });
+  const CANVAS_W = 1700;
+  const CANVAS_H = 900;
 
   useEffect(() => {
     let timeoutId: number;
 
     const updateScale = () => {
-      const canvasWidth = 1750;
-      const canvasHeight = 1200;
       const windowWidth = window.innerWidth;
-      const windowHeight = window.innerHeight;
-      const scaleFactor = Math.min(windowWidth / canvasWidth, windowHeight / canvasHeight);
+      const windowHeight = window.innerHeight - 100; // Account for score/buttons padding
 
+      // Calculate scale factor based on container size
+      const scaleFactor = Math.min(windowWidth / CANVAS_W, windowHeight / CANVAS_H);
+
+      // Clamp scale between 0.5 and 1.0 to prevent massive upscaling or overly small rendering
+      const clampedScale = Math.max(0.5, Math.min(1.0, scaleFactor));
+      
       setScale({
-        sx: scaleFactor > 1 ? 1 : scaleFactor * 0.95,
-        sy: scaleFactor > 0.95 ? 1 : scaleFactor * 0.85,
+        sx: clampedScale,
+        sy: clampedScale,
       });
     };
 
@@ -59,7 +64,7 @@ const useGameScale = () => {
 };
 
 export default function Game({ meId }: Props) {
-  const router = useRouter();
+  const router = useRouter(); // Using mock router
   const { sx, sy } = useGameScale();
 
   // Game State
@@ -71,7 +76,7 @@ export default function Game({ meId }: Props) {
   
   // Countdown State
   const [countdown, setCountdown] = useState(3);
-  const [showCountdown, setShowCountdown] = useState(true);
+  const [showCountdown, setShowCountdown] = useState(false); // Start hidden until room is ready
 
   // Refs for data accessed inside Event Listeners (prevents stale closures)
   const playersRef = useRef<PlayerState>({ left: "", right: "" });
@@ -87,8 +92,9 @@ export default function Game({ meId }: Props) {
       playersRef.current = newPlayers; // Update ref for other listeners
       
       setRoomId(data.room);
-      const savedMap = localStorage.getItem("map");
-      if (savedMap) setMap(savedMap);
+      const savedMap = localStorage.getItem("map") || "default"; // Default map if none saved
+      setMap(savedMap);
+      setShowCountdown(true); // Show countdown once game info is ready
     };
 
     const onScore = (data: { leftScore: number; rightScore: number }) => {
@@ -96,7 +102,6 @@ export default function Game({ meId }: Props) {
     };
 
     const onWinner = (side: string) => {
-      // Use ref to get the most current player names without adding 'players' to dependency array
       const currentPlayers = playersRef.current;
       const winnerName = side === "left" ? currentPlayers.left : currentPlayers.right;
       setWinner(winnerName);
@@ -115,17 +120,23 @@ export default function Game({ meId }: Props) {
 
   // 2. Countdown Logic
   useEffect(() => {
+    if (!showCountdown || roomId === "") return; // Only run if room is ready
+
     if (countdown > 0) {
+      // Clear any existing interval before starting a new one
+      if (countdownIntervalRef.current !== undefined) {
+        clearInterval(countdownIntervalRef.current);
+      }
+      
       countdownIntervalRef.current = window.setInterval(() => {
         setCountdown((prev) => prev - 1);
       }, 1000);
     } else {
-      setShowCountdown(false);
       clearInterval(countdownIntervalRef.current);
     }
 
     return () => clearInterval(countdownIntervalRef.current);
-  }, [countdown]);
+  }, [countdown, showCountdown, roomId]); // Depend on showCountdown/roomId to start
 
   // 3. Handlers
   const handleLeave = () => {
@@ -133,80 +144,79 @@ export default function Game({ meId }: Props) {
     router.push("/game");
   };
 
-  // 4. Reset Logic (Passed to Won/Lost components if they allow re-match)
-  const resetGameUI = () => {
-    setWinner("");
-    // Add any other reset logic here if needed
-  };
-
   // Determine Game Over State
   const isGameOver = winner !== "";
   const didIWin = winner === meId;
   const otherPlayerName = meId === players.right ? players.left : players.right;
 
+  // Render the appropriate map component
+  const renderGameCanvas = () => {
+    if (!roomId) return null; // Wait for room info
+
+    switch (map) {
+      case "football-mode":
+        return <FootGame roomid={roomId} me={meId} RightPlayer={players.right} />;
+      case "space-mode":
+        return <DisapGame roomid={roomId} me={meId} RightPlayer={players.right} />;
+      case "default":
+      default:
+        return <DefaultGame roomid={roomId} me={meId} RightPlayer={players.right} />;
+    }
+  };
+
   return (
-    <main className="w-full h-full grid place-content-center pt-14">
+    <main className="min-h-screen w-full flex flex-col items-center justify-center p-4 bg-gray-900 text-white">
       
-      {/* GAME IN PROGRESS */}
-      {!isGameOver && (
-        <div
-          className="flex flex-col gap-8 p-16 sm:bg-white sm:bg-opacity-20 sm:backdrop-blur-lg sm:drop-shadow-lg sm:rounded-3xl"
-          style={{ transform: `scale(${sx}, ${sy})` }}
-        >
-          {players.left && players.right && (
-            <PlayersScore
-              left={scores.left}
-              right={scores.right}
-              leftPlayer={players.left}
-              rightPlayer={players.right}
-              currentUserId={meId}
-            />
+      {/* GAME OVER STATE */}
+      {isGameOver && (
+        <div className="flex items-center justify-center min-h-screen w-full">
+          {didIWin ? (
+            <Won setWon={setWinner} me={meId} other={otherPlayerName} />
+          ) : (
+            <Lost setWon={setWinner} me={meId} other={otherPlayerName} />
           )}
-
-          <div className="relative">
-            {showCountdown && scores.left === 0 && scores.right === 0 && (
-              <p className="absolute top-[50%] left-[50%] -translate-x-1/2 -translate-y-1/2 font-bold text-[#f6f6f6] z-10 text-[90px] mb-[150px]">
-                {countdown}
-              </p>
-            )}
-
-            {map === "default" && (
-              <DefaultGame roomid={roomId} me={meId} RightPlayer={players.right} />
-            )}
-            {map === "football-mode" && (
-              <FootGame roomid={roomId} me={meId} RightPlayer={players.right} />
-            )}
-            {map === "space-mode" && (
-              <DisapGame roomid={roomId} me={meId} RightPlayer={players.right} />
-            )}
-          </div>
-
-          <button
-            className="ml-auto mt-10 text-white text-[20px] bg-red w-[150px] h-[40px] rounded-[10px] hover:bg-[#FBACB3] transition-colors"
-            onClick={handleLeave}
-          >
-            Leave
-          </button>
         </div>
       )}
 
-      {/* GAME OVER - Renders ONLY one of these */}
-      {isGameOver && (
-        didIWin ? (
-          <Won 
-            setLost={() => {}} // Won component likely doesn't need to set lost, passing no-op or adjust based on component definition
-            setWon={setWinner} 
-            me={meId} 
-            other={otherPlayerName} 
+      {/* GAME IN PROGRESS STATE */}
+      {!isGameOver && players.left && players.right && (
+        <div className="flex flex-col items-center gap-6 w-full max-w-7xl">
+          
+          {/* Scoreboard Area */}
+          <PlayersScore
+            left={scores.left}
+            right={scores.right}
+            leftPlayer={players.left}
+            rightPlayer={players.right}
+            currentUserId={meId}
           />
-        ) : (
-          <Lost 
-            setLost={() => {}} 
-            setWon={setWinner} 
-            me={meId} 
-            other={otherPlayerName} 
-          />
-        )
+
+          {/* Canvas Area with Scale */}
+          <div 
+            className="relative transition-transform duration-300"
+            style={{ transform: `scale(${sx}, ${sy})`, transformOrigin: 'top center' }}
+          >
+            {/* Dramatic Countdown Overlay */}
+            {showCountdown && countdown > 0 && (
+              <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/70 rounded-xl">
+                <p className="font-black text-white text-9xl sm:text-[150px] animate-pulse drop-shadow-neon" style={{'--tw-drop-shadow': '0 0 10px #fff'}}>
+                  {countdown}
+                </p>
+              </div>
+            )}
+            
+            {/* Game Canvas */}
+            {renderGameCanvas()}
+          </div>
+
+          {/* Leave Button */}
+          <button
+            className="mt-6 px-8 py-3 text-lg font-bold text-white bg-red-600 rounded-full shadow-lg shadow-red-600/40 hover:bg-red-700 transition-colors transform hover:scale-105"
+            onClick={handleLeave}
+          >
+            Forfeit Match
+          </button>
+        </div>
       )}
     </main>
   );

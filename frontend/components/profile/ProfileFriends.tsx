@@ -37,7 +37,7 @@ export default function ProfileFriends({ userId, isCurrentUser }: ProfileFriends
   return (
     <div className="bg-[#1a1b26] rounded-[2rem] border border-white/5 shadow-2xl h-[600px] flex flex-col overflow-hidden relative">
       
-      {/* Header Section */}
+
       <div className="p-6 pb-4 border-b border-white/5 bg-[#1a1b26]/80 backdrop-blur-xl z-10">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
@@ -59,7 +59,6 @@ export default function ProfileFriends({ userId, isCurrentUser }: ProfileFriends
         </div>
       </div>
 
-      {/* Friends List */}
       <div className="flex-1 overflow-y-auto custom-scrollbar p-4 space-y-3 bg-black/10">
         {isLoading ? (
           <div className="flex items-center justify-center h-full">
@@ -78,7 +77,7 @@ export default function ProfileFriends({ userId, isCurrentUser }: ProfileFriends
         )}
       </div>
       
-      {/* Bottom fade for cleaner scrolling look */}
+
       <div className="absolute bottom-0 left-0 w-full h-8 bg-gradient-to-t from-[#1a1b26] to-transparent pointer-events-none" />
     </div>
   );
